@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Admin Reservas">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Negro Padel · Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow-x: hidden; }
+    :root {
+      --bg: #f5f5f5; --card: #fff; --border: rgba(0,0,0,0.08);
+      --text: #111; --text2: #666; --text3: #aaa;
+      --green: #16a34a; --red: #dc2626; --orange: #f97316; --yellow: #eab308;
+      --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom);
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); -webkit-font-smoothing: antialiased; padding-top: var(--sat); }
+
+    .header { background: #0a0a0a; border-bottom: 1px solid rgba(255,255,255,0.07); position: sticky; top: 0; z-index: 100; padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+    .header-inner { max-width: 960px; margin: 0 auto; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .header-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .header-logo img { width: 28px; height: 28px; object-fit: contain; }
+    .logo-name { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.05em; color: #fff; white-space: nowrap; }
+    .logo-sub  { font-size: 8px; letter-spacing: 0.16em; color: rgba(255,255,255,0.25); text-transform: uppercase; font-weight: 600; }
+
+    .tabs { background: #0a0a0a; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; gap: 4px; padding: 0 12px 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex-shrink: 0; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; white-space: nowrap; transition: all 0.15s; color: rgba(255,255,255,0.35); background: transparent; }
+    .tab.active { color: #fff; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+
+    .main { max-width: 960px; margin: 0 auto; padding: 14px 14px calc(40px + var(--sab)); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 6px; text-align: center; }
+    .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--text); line-height: 1; }
+    .stat-num.g { color: var(--green); } .stat-num.r { color: var(--red); } .stat-num.o { color: var(--orange); }
+    .stat-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 2px; }
+
+    .day-tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .day-tabs::-webkit-scrollbar { display: none; }
+    .day-tab { flex-shrink: 0; padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--card); cursor: pointer; text-align: center; transition: all 0.15s; }
+    .day-tab.active { background: #111; border-color: #111; color: #fff; }
+    .day-tab-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .day-tab-date { font-size: 10px; opacity: 0.6; margin-top: 1px; }
+
+    .slots { display: flex; flex-direction: column; gap: 6px; }
+    .slot { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; display: flex; align-items: center; gap: 10px; }
+    .slot.occupied { border-color: rgba(220,38,38,0.25); background: rgba(220,38,38,0.02); }
+    .slot.fixed    { border-color: rgba(234,179,8,0.4);  background: rgba(234,179,8,0.03); }
+    .slot-time { font-family: 'Bebas Neue', sans-serif; font-size: 21px; color: var(--text); width: 48px; flex-shrink: 0; letter-spacing: 0.02em; line-height: 1; }
+    .slot-body { flex: 1; min-width: 0; }
+    .slot-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 6px; border-radius: 99px; margin-top: 2px; }
+    .badge-fixed  { background: rgba(234,179,8,0.15); color: #92400e; }
+    .badge-normal { background: rgba(220,38,38,0.1);  color: var(--red); }
+    .slot-wrap { display: flex; gap: 6px; flex: 1; }
+    .slot-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; outline: none; min-width: 0; }
+    .slot-input:focus { border-color: #111; }
+    .btn-add { width: 34px; height: 34px; border-radius: 7px; border: none; background: #111; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .slot-actions { display: flex; gap: 5px; flex-shrink: 0; }
+    .btn-ic { width: 32px; height: 32px; border-radius: 7px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.15s; }
+    .ic-rm    { background: rgba(220,38,38,0.08); color: var(--red); }
+    .ic-pin   { background: rgba(234,179,8,0.12); color: #92400e; }
+    .ic-unpin { background: rgba(0,0,0,0.06);     color: var(--text3); }
+
+    .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.03em; color: var(--text); margin-bottom: 12px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+    .card-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
+    .price-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .price-item:last-child { border-bottom: none; }
+    .price-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--text); }
+    .price-inp { width: 100px; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; text-align: right; outline: none; }
+    .price-inp:focus { border-color: #111; }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: #ddd; border-radius: 99px; cursor: pointer; transition: 0.2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+    .toggle input:checked + .toggle-slider { background: var(--green); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+    .field-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .field-lbl { font-size: 13px; color: var(--text2); }
+    .field-inp { width: 100px; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; text-align: right; outline: none; }
+
+    .promo-day { margin-bottom: 14px; }
+    .promo-day-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; }
+    .promo-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .promo-item:last-child { border-bottom: none; }
+    .promo-time { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: var(--text); width: 42px; flex-shrink: 0; }
+    .promo-inp { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 12px; color: var(--text); font-family: 'Inter', sans-serif; outline: none; }
+    .promo-inp:focus { border-color: #111; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 18px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.15s; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #111; color: #fff; width: 100%; margin-top: 10px; }
+    .btn-outline  { background: transparent; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.15); font-size: 12px; padding: 5px 12px; }
+
+    .tool-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; margin-bottom: 8px; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .tool-btn:active { transform: scale(0.98); }
+    .tool-icon { font-size: 20px; width: 34px; text-align: center; flex-shrink: 0; }
+    .tool-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .tool-desc  { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .tool-btn.warn   { border-color: rgba(234,179,8,0.3); }
+    .tool-btn.danger { border-color: rgba(220,38,38,0.2); }
+    .tool-btn.warn   .tool-title { color: #92400e; }
+    .tool-btn.danger .tool-title { color: var(--red); }
+
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; justify-content: center; padding-bottom: var(--sab); }
+    .modal.active { display: flex; }
+    .modal-box { background: var(--card); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 480px; }
+    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--text); margin-bottom: 8px; }
+    .modal-msg { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+    .modal-btns { display: flex; gap: 8px; }
+    .modal-btns .btn { flex: 1; }
+    .btn-red  { background: var(--red); color: #fff; }
+    .btn-gray { background: #f5f5f5; color: var(--text); border: 1px solid var(--border); }
+
+    .toast { position: fixed; bottom: calc(20px + var(--sab)); left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 99px; font-size: 13px; font-weight: 500; z-index: 999; display: none; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .toast.active { display: block; }
+    .toast.success { background: #111; color: #4ade80; }
+    .toast.error   { background: #111; color: #f87171; }
+    .toast.info    { background: #111; color: rgba(255,255,255,0.6); }
+
+    .spinner { width: 20px; height: 20px; border: 2px solid #e5e5e5; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; margin: 40px auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (min-width: 640px) {
+      .prices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="#" class="header-logo">
+      <img src="icon-192.png" alt="Negro Padel">
+      <div>
+        <div class="logo-name">Negro Padel</div>
+        <div class="logo-sub">Panel Admin</div>
+      </div>
+    </a>
+    <button class="btn btn-outline" onclick="recargarDatos()">↺ Recargar</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPanel('reservas',this)">🎾 Reservas</button>
+  <button class="tab" onclick="showPanel('precios',this)">💰 Precios</button>
+  <button class="tab" onclick="showPanel('descuento',this)">🔥 Descuento</button>
+  <button class="tab" onclick="showPanel('promociones',this)">🎁 Promociones</button>
+  <button class="tab" onclick="showPanel('tools',this)">🔧 Herramientas</button>
+</div>
+
+<div class="main">
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="totalSlots">—</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-num r" id="occupiedSlots">—</div><div class="stat-label">Ocupados</div></div>
+    <div class="stat"><div class="stat-num o" id="fixedSlots">—</div><div class="stat-label">Fijos</div></div>
+    <div class="stat"><div class="stat-num g" id="availableSlots">—</div><div class="stat-label">Libres</div></div>
+  </div>
+
+  <div class="panel active" id="panel-reservas">
+    <div class="day-tabs" id="dayTabs"></div>
+    <div class="slots" id="schedule"><div class="spinner"></div></div>
+  </div>
+
+  <div class="panel" id="panel-precios">
+    <div class="section-title">Precios</div>
+    <div class="prices-grid">
+      <div class="card"><div class="card-title">Lunes a Viernes</div><div id="precios-semana"></div></div>
+      <div class="card"><div class="card-title">Sábado y Domingo</div><div id="precios-fds"></div></div>
+    </div>
+    <button class="btn btn-primary" onclick="guardarConfigPrecios()">💾 Guardar precios</button>
+  </div>
+
+  <div class="panel" id="panel-descuento">
+    <div class="section-title">Descuento Last Minute</div>
+    <div class="card">
+      <div class="toggle-row">
+        <span class="field-lbl">Activar descuento</span>
+        <label class="toggle"><input type="checkbox" id="descuento-activo"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="field-row"><span class="field-lbl">Porcentaje</span><input type="number" class="field-inp" id="descuento-porcentaje" value="10" min="1" max="100"></div>
+      <div class="field-row"><span class="field-lbl">Minutos antes</span><input type="number" class="field-inp" id="descuento-minutos" value="90" min="1"></div>
+    </div>
+    <button class="btn btn-primary" onclick="guardarConfigPrecios()">💾 Guardar descuento</button>
+  </div>
+
+  <div class="panel" id="panel-promociones">
+    <div class="section-title">Promociones</div>
+    <div class="card" id="promos-container"><div class="spinner"></div></div>
+    <button class="btn btn-primary" onclick="guardarPromociones()">💾 Guardar promociones</button>
+  </div>
+
+  <div class="panel" id="panel-tools">
+    <div class="section-title">Herramientas</div>
+    <button class="tool-btn" onclick="recargarDatos()">
+      <div class="tool-icon">↺</div><div><div class="tool-title">Recargar datos</div><div class="tool-desc">Actualiza todo desde Google Sheets</div></div>
+    </button>
+    <button class="tool-btn warn" onclick="confirmClearNonFixed()">
+      <div class="tool-icon">🗑️</div><div><div class="tool-title">Limpiar reservas normales</div><div class="tool-desc">Mantiene los turnos fijos intactos</div></div>
+    </button>
+    <button class="tool-btn danger" onclick="confirmClearAll()">
+      <div class="tool-icon">⚠️</div><div><div class="tool-title">Limpiar TODO</div><div class="tool-desc">Elimina todas las reservas incluyendo fijos</div></div>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title">Confirmar</div>
+    <div class="modal-msg" id="modalMessage"></div>
+    <div class="modal-btns">
+      <button class="btn btn-red"  onclick="executeModalAction()">Confirmar</button>
+      <button class="btn btn-gray" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyd4O4dWAUnUgGeyok35PCeGSRAbxLu4uLfh6_WQQiOYSREVlkX6Dpru7sI3Fiuusn0/exec';
+  const SLOTS   = ['09:00','10:30','12:00','14:00','15:30','17:00','18:30','20:00','21:30','23:00'];
+  const MONTHS  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const DIAS    = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+
+  let data = { week: [], fixedSlotsByDay: {} };
+  let dayIdx = 0, modalAction = null, toastTimer;
+
+  function showPanel(id, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function toast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = `toast ${type} active`;
+    clearTimeout(toastTimer);
+    if (type !== 'info') toastTimer = setTimeout(() => t.classList.remove('active'), 4000);
+  }
+
+  function setDisabled(d) {
+    document.querySelectorAll('button,input').forEach(el => el.disabled = d);
+  }
+
+  function closeModal() { document.getElementById('confirmModal').classList.remove('active'); modalAction = null; }
+  function executeModalAction() { if (modalAction) modalAction(); }
+
+  // ── RESERVAS ──
+  async function loadScheduleData() {
+    try {
+      toast('Cargando...', 'info');
+      const r = await fetch(`${API_URL}?action=getTurnos`);
+      const res = await r.json();
+      if (!res.success) throw new Error(res.error);
+      data.week = res.data.week;
+      data.fixedSlotsByDay = res.data.fixedSlotsByDay || {};
+      renderDayTabs(); renderSlots(); updateStats();
+      document.getElementById('toast').classList.remove('active');
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+  }
+
+  function renderDayTabs() {
+    document.getElementById('dayTabs').innerHTML = data.week.map((d,i) => `
+      <div class="day-tab ${i===dayIdx?'active':''}" onclick="selectDay(${i})">
+        <div class="day-tab-name">${d.day.slice(0,3)}</div>
+        <div class="day-tab-date">${d.date} ${MONTHS[parseInt(d.month)-1]}</div>
+      </div>`).join('');
+  }
+
+  function selectDay(i) { dayIdx = i; renderDayTabs(); renderSlots(); }
+
+  function renderSlots() {
+    const day = data.week[dayIdx]; if (!day) return;
+    document.getElementById('schedule').innerHTML = SLOTS.map((time, ti) => {
+      const occ   = day.slots[time];
+      const fixed = data.fixedSlotsByDay[day.day]?.[time];
+      if (occ) return `
+        <div class="slot ${fixed?'fixed':'occupied'}">
+          <div class="slot-time">${time}</div>
+          <div class="slot-body">
+            <div class="slot-name">${occ}</div>
+            <span class="slot-badge ${fixed?'badge-fixed':'badge-normal'}">${fixed?'📌 Fijo':'● Reservado'}</span>
+          </div>
+          <div class="slot-actions">
+            <button class="btn-ic ic-rm"    onclick="removePlayer('${day.dateKey}','${day.day}','${time}',${!!fixed})">✕</button>
+            <button class="btn-ic ${fixed?'ic-unpin':'ic-pin'}" onclick="toggleFixed('${day.day}','${time}','${occ}',${!!fixed})">${fixed?'📍':'📌'}</button>
+          </div>
+        </div>`;
+      return `
+        <div class="slot">
+          <div class="slot-time">${time}</div>
+          <div class="slot-wrap">
+            <input class="slot-input" id="inp-${ti}-${time}" placeholder="Nombre del jugador"
+              onkeypress="if(event.key==='Enter')addPlayer('${day.dateKey}','${day.day}','${time}')">
+            <button class="btn-add" onclick="addPlayer('${day.dateKey}','${day.day}','${time}')">+</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function updateStats() {
+    const total = data.week.length * SLOTS.length;
+    let occ = 0, fixed = 0;
+    data.week.forEach(d => occ += Object.keys(d.slots).length);
+    Object.values(data.fixedSlotsByDay).forEach(ds => fixed += Object.keys(ds).length);
+    document.getElementById('totalSlots').textContent     = total;
+    document.getElementById('occupiedSlots').textContent  = occ;
+    document.getElementById('fixedSlots').textContent     = fixed;
+    document.getElementById('availableSlots').textContent = total - occ;
+  }
+
+  async function addPlayer(dateKey, day, time) {
+    const ti = SLOTS.indexOf(time);
+    const inp = document.getElementById(`inp-${ti}-${time}`);
+    const name = inp.value.trim().toUpperCase();
+    if (!name) { toast('Ingresá un nombre', 'error'); return; }
+    try {
+      setDisabled(true); toast('Guardando...', 'info');
+      const r = await fetch(`${API_URL}?action=agregarReserva`, { method:'POST', body: JSON.stringify({dateKey,day,time,name,isFixed:false}) });
+      const res = await r.json();
+      if (!res.success) throw new Error(res.error);
+      await loadScheduleData(); toast(`✓ ${name} — ${day} ${time}`, 'success');
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+    finally { setDisabled(false); }
+  }
+
+  async function removePlayer(dateKey, day, time, isFixed) {
+    try {
+      setDisabled(true); toast('Eliminando...', 'info');
+      const r = await fetch(`${API_URL}?action=eliminarReserva`, { method:'POST', body: JSON.stringify({dateKey,day,time,isFixed}) });
+      const res = await r.json();
+      if (!res.success) throw new Error(res.error);
+      await loadScheduleData(); toast('Reserva eliminada', 'success');
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+    finally { setDisabled(false); }
+  }
+
+  async function toggleFixed(day, time, name, isCurrentlyFixed) {
+    try {
+      setDisabled(true); toast(isCurrentlyFixed?'Quitando fijo...':'Marcando fijo...', 'info');
+      const r = await fetch(`${API_URL}?action=toggleTurnoFijo`, { method:'POST', body: JSON.stringify({day,time,name,isCurrentlyFixed}) });
+      const res = await r.json();
+      if (!res.success) throw new Error(res.error);
+      await loadScheduleData(); toast(res.data.message, 'success');
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+    finally { setDisabled(false); }
+  }
+
+  // ── PRECIOS ──
+  function buildPriceInputs() {
+    ['semana','fds'].forEach((id, isF) => {
+      const key = isF ? 'finDeSemana' : 'semana';
+      document.getElementById(`precios-${id}`).innerHTML = SLOTS.map(h => `
+        <div class="price-item">
+          <span class="price-lbl">${h}</span>
+          <input type="number" class="price-inp" id="precio-${key}-${h}" value="20000" step="1000">
+        </div>`).join('');
+    });
+  }
+
+  async function cargarConfigPrecios() {
+    try {
+      const r = await fetch(`${API_URL}?action=getPrecios`);
+      const res = await r.json();
+      if (!res.success) return;
+      const { precios, descuento } = res.data;
+      if (precios?.semana)      SLOTS.forEach(h => { const el = document.getElementById(`precio-semana-${h}`); if(el) el.value = precios.semana[h]||''; });
+      if (precios?.finDeSemana) SLOTS.forEach(h => { const el = document.getElementById(`precio-finDeSemana-${h}`); if(el) el.value = precios.finDeSemana[h]||''; });
+      if (descuento) {
+        document.getElementById('descuento-activo').checked   = descuento.activo;
+        document.getElementById('descuento-porcentaje').value = descuento.porcentaje;
+        document.getElementById('descuento-minutos').value    = descuento.minutosAntes;
+      }
+    } catch(e) {}
+  }
+
+  async function guardarConfigPrecios() {
+    try {
+      setDisabled(true); toast('Guardando...', 'info');
+      const semana = {}, fds = {};
+      SLOTS.forEach(h => {
+        const s = document.getElementById(`precio-semana-${h}`);
+        const f = document.getElementById(`precio-finDeSemana-${h}`);
+        if(s) semana[h] = parseInt(s.value)||0;
+        if(f) fds[h]    = parseInt(f.value)||0;
+      });
+      const descuento = {
+        activo:       document.getElementById('descuento-activo').checked,
+        porcentaje:   parseInt(document.getElementById('descuento-porcentaje').value)||10,
+        minutosAntes: parseInt(document.getElementById('descuento-minutos').value)||90,
+      };
+      const r = await fetch(`${API_URL}?action=guardarPrecios`, { method:'POST', body: JSON.stringify({ precios:{semana,finDeSemana:fds}, descuento }) });
+      const res = await r.json();
+      if (!res.success) throw new Error(res.error);
+      toast('✓ Guardado', 'success');
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+    finally { setDisabled(false); }
+  }
+
+  // ── PROMOCIONES ──
+  function buildPromoInputs() {
+    document.getElementById('promos-container').innerHTML = DIAS.map(dia => `
+      <div class="promo-day">
+        <div class="promo-day-title">${dia}</div>
+        ${SLOTS.map(h => `
+          <div class="promo-item">
+            <span class="promo-time">${h}</span>
+            <input class="promo-inp" id="promo-${dia}-${h}" placeholder="Texto...">
+          </div>`).join('')}
+      </div>`).join('');
+  }
+
+  async function cargarPromociones() {
+    try {
+      const r = await fetch(`${API_URL}?action=getPromociones`);
+      const res = await r.json();
+      if (!res.success) return;
+      for (let k in res.data) { const el = document.getElementById(`promo-${k}`); if(el) el.value = res.data[k]; }
+    } catch(e) {}
+  }
+
+  async function guardarPromociones() {
+    try {
+      setDisabled(true); toast('Guardando...', 'info');
+      const promos = {};
+      DIAS.forEach(d => SLOTS.forEach(h => { const el = document.getElementById(`promo-${d}-${h}`); if(el&&el.value.trim()) promos[`${d}-${h}`]=el.value.trim(); }));
+      const r = await fetch(`${API_URL}?action=guardarPromociones`, { method:'POST', body: JSON.stringify({promociones:promos}) });
+      const res = await r.json();
+      if (!res.success) throw new Error(res.error);
+      toast('✓ Promociones guardadas', 'success');
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+    finally { setDisabled(false); }
+  }
+
+  // ── HERRAMIENTAS ──
+  function confirmClearNonFixed() {
+    document.getElementById('modalMessage').textContent = '¿Eliminás todas las reservas normales? Los turnos fijos se mantienen.';
+    modalAction = async () => {
+      try {
+        setDisabled(true); closeModal(); toast('Limpiando...','info');
+        const r = await fetch(`${API_URL}?action=limpiarReservasNormales`,{method:'POST',body:'{}'});
+        const res = await r.json();
+        if(!res.success) throw new Error(res.error);
+        await loadScheduleData(); toast('✓ Reservas normales eliminadas','success');
+      } catch(e) { toast('Error: '+e.message,'error'); }
+      finally { setDisabled(false); }
+    };
+    document.getElementById('confirmModal').classList.add('active');
+  }
+
+  function confirmClearAll() {
+    document.getElementById('modalMessage').textContent = '¿Eliminás TODAS las reservas incluyendo fijos? Esta acción no se puede deshacer.';
+    modalAction = async () => {
+      try {
+        setDisabled(true); closeModal(); toast('Limpiando todo...','info');
+        const r = await fetch(`${API_URL}?action=limpiarTodo`,{method:'POST',body:'{}'});
+        const res = await r.json();
+        if(!res.success) throw new Error(res.error);
+        await loadScheduleData(); toast('✓ Todo eliminado','success');
+      } catch(e) { toast('Error: '+e.message,'error'); }
+      finally { setDisabled(false); }
+    };
+    document.getElementById('confirmModal').classList.add('active');
+  }
+
+  function recargarDatos() { loadScheduleData(); cargarConfigPrecios(); cargarPromociones(); }
+
+  // ── INIT ──
+  buildPriceInputs();
+  buildPromoInputs();
+  loadScheduleData();
+  cargarConfigPrecios();
+  cargarPromociones();
+  setInterval(loadScheduleData, 300000);
+</script>
+</body>
+</html>
