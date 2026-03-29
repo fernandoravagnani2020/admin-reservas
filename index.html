@@ -21,9 +21,9 @@
       --green: #16a34a; --red: #dc2626; --orange: #f97316; --yellow: #eab308;
       --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom);
     }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); -webkit-font-smoothing: antialiased; padding-top: var(--sat); }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); -webkit-font-smoothing: antialiased; }
 
-    .header { background: #0a0a0a; border-bottom: 1px solid rgba(255,255,255,0.07); position: sticky; top: 0; z-index: 100; padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+    .header { background: #0a0a0a; border-bottom: 1px solid rgba(255,255,255,0.07); position: sticky; top: 0; z-index: 100; padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
     .header-inner { max-width: 960px; margin: 0 auto; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .header-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
     .header-logo img { width: 28px; height: 28px; object-fit: contain; }
