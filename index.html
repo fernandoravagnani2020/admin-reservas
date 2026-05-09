@@ -14,6 +14,20 @@
   <title>Negro Padel · Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @font-face {
+      font-family: 'Campton Black';
+      src: url('fonts/CamptonBlack.otf') format('opentype');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Campton Bold';
+      src: url('fonts/CamptonBold.otf') format('opentype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
     html, body { height: 100%; overflow-x: hidden; }
     :root {
       --bg: #f5f5f5; --card: #fff; --border: rgba(0,0,0,0.08);
@@ -243,6 +257,8 @@
   const HORA_INICIO_FLYER = '14:30';
   const TEMPLATE_FLYER = 'Plantilla turnos.PNG';
   const FLYER_GRID = { x1: 60, y1: 220, x2: 754, y2: 1062 };
+  const FONT_BLACK_FLYER = '"Campton Black", "Arial Black", sans-serif';
+  const FONT_BOLD_FLYER = '"Campton Bold", Arial, sans-serif';
 
   let data = { week: [], fixedSlotsByDay: {} };
   let dayIdx = 0, modalAction = null, toastTimer;
@@ -550,8 +566,8 @@
   }
 
   async function generarImagenFlyer(slots) {
-    await document.fonts?.load('72px "Bebas Neue"');
-    await document.fonts?.load('38px Inter');
+    await document.fonts?.load(`900 72px ${FONT_BLACK_FLYER}`);
+    await document.fonts?.load(`700 38px ${FONT_BOLD_FLYER}`);
 
     const template = await loadTemplateImage();
     const canvas = document.createElement('canvas');
@@ -570,7 +586,7 @@
     const divider = '#3c583e';
 
     if (!slots.length) {
-      drawCenteredText(ctx, 'SIN TURNOS\nDISPONIBLES', cx, FLYER_GRID.y1 + gridH / 2, '700 38px Inter, sans-serif', lime, 48);
+      drawCenteredText(ctx, 'SIN TURNOS\nDISPONIBLES', cx, FLYER_GRID.y1 + gridH / 2, `700 38px ${FONT_BOLD_FLYER}`, lime, 48);
       return canvas;
     }
 
@@ -591,7 +607,7 @@
     const xLeft = FLYER_GRID.x1 + padX;
     const xRight = FLYER_GRID.x2 - padX;
 
-    drawCenteredText(ctx, fechaLabel, cx, y + rowH / 2, `700 ${sizes.fecha}px Inter, sans-serif`, lime, sizes.fecha + 8);
+    drawCenteredText(ctx, fechaLabel, cx, y + rowH / 2, `700 ${sizes.fecha}px ${FONT_BOLD_FLYER}`, lime, sizes.fecha + 8);
     y += rowH;
     ctx.strokeStyle = divider;
     ctx.lineWidth = 1;
@@ -604,17 +620,17 @@
       const cy = y + rowH / 2;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.font = `${sizes.hora}px "Bebas Neue", sans-serif`;
+      ctx.font = `900 ${sizes.hora}px ${FONT_BLACK_FLYER}`;
       const horaW = ctx.measureText(slot.hora).width;
-      ctx.font = `700 ${sizes.hs}px Inter, sans-serif`;
+      ctx.font = `700 ${sizes.hs}px ${FONT_BOLD_FLYER}`;
       const sepW = ctx.measureText(' ').width;
       const hsW = ctx.measureText('HS').width;
       const xHora = cx - (horaW + sepW + hsW) / 2;
 
-      ctx.font = `${sizes.hora}px "Bebas Neue", sans-serif`;
+      ctx.font = `900 ${sizes.hora}px ${FONT_BLACK_FLYER}`;
       ctx.fillStyle = white;
       ctx.fillText(slot.hora, xHora, cy);
-      ctx.font = `700 ${sizes.hs}px Inter, sans-serif`;
+      ctx.font = `700 ${sizes.hs}px ${FONT_BOLD_FLYER}`;
       ctx.fillStyle = lime;
       ctx.fillText('HS', xHora + horaW + sepW, cy);
       y += rowH;
