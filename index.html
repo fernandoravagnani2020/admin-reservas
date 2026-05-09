@@ -107,6 +107,7 @@
 
     .tool-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; margin-bottom: 8px; font-family: 'Inter', sans-serif; transition: all 0.15s; }
     .tool-btn:active { transform: scale(0.98); }
+    .tool-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
     .tool-icon { font-size: 20px; width: 34px; text-align: center; flex-shrink: 0; }
     .tool-title { font-size: 14px; font-weight: 600; color: var(--text); }
     .tool-desc  { font-size: 11px; color: var(--text3); margin-top: 1px; }
@@ -205,6 +206,9 @@
 
   <div class="panel" id="panel-tools">
     <div class="section-title">Herramientas</div>
+    <button class="tool-btn" onclick="generarFlyerManual()">
+      <div class="tool-icon">🖼️</div><div><div class="tool-title">Generar flyer de turnos</div><div class="tool-desc">Descarga el PNG con los turnos libres de hoy</div></div>
+    </button>
     <button class="tool-btn" onclick="recargarDatos()">
       <div class="tool-icon">↺</div><div><div class="tool-title">Recargar datos</div><div class="tool-desc">Actualiza todo desde Google Sheets</div></div>
     </button>
@@ -235,6 +239,10 @@
   const SLOTS   = ['09:30','11:00','12:30','14:30','16:00','17:30','19:00','20:30','22:00',];
   const MONTHS  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const DIAS    = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+  const MONTHS_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const HORA_INICIO_FLYER = '14:30';
+  const TEMPLATE_FLYER = 'Plantilla turnos.PNG';
+  const FLYER_GRID = { x1: 60, y1: 220, x2: 754, y2: 1062 };
 
   let data = { week: [], fixedSlotsByDay: {} };
   let dayIdx = 0, modalAction = null, toastTimer;
@@ -448,6 +456,207 @@
   }
 
   // ── HERRAMIENTAS ──
+  function getArgentinaNow() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Cordoba',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    }).formatToParts(new Date()).reduce((acc, p) => {
+      acc[p.type] = p.value;
+      return acc;
+    }, {});
+    return new Date(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second)
+    );
+  }
+
+  function getFechaTurno(day) {
+    if (day.year && day.month && day.date) {
+      return `${day.year}-${String(day.month).padStart(2,'0')}-${String(day.date).padStart(2,'0')}`;
+    }
+    if (day.dateKey) return String(day.dateKey).slice(0, 10);
+    return '';
+  }
+
+  function slotEnd(fecha, hora) {
+    const [year, month, day] = fecha.split('-').map(Number);
+    const [hour, minute] = hora.split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute + 90);
+  }
+
+  function turnoFinalizado(fecha, hora) {
+    return getArgentinaNow() > slotEnd(fecha, hora);
+  }
+
+  function turnoEnCurso(fecha, hora) {
+    const end = slotEnd(fecha, hora);
+    const start = new Date(end.getTime() - 90 * 60 * 1000);
+    const now = getArgentinaNow();
+    return start <= now && now <= end;
+  }
+
+  function getSlotsLibresFlyer(apiData) {
+    const now = getArgentinaNow();
+    const todayKey = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+    const slots = [];
+
+    for (const day of apiData.week || []) {
+      const fecha = getFechaTurno(day);
+      if (fecha !== todayKey) continue;
+
+      for (const hora of SLOTS) {
+        if (hora < HORA_INICIO_FLYER) continue;
+        if (turnoEnCurso(fecha, hora) || turnoFinalizado(fecha, hora)) continue;
+        if (day.slots?.[hora]) continue;
+        slots.push({ dia: day.day, fecha, date: day.date, month: day.month, hora });
+      }
+    }
+    return slots;
+  }
+
+  function loadTemplateImage() {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('No se pudo cargar la plantilla del flyer'));
+      img.src = encodeURI(TEMPLATE_FLYER);
+    });
+  }
+
+  function drawCenteredText(ctx, text, x, y, font, fill, lineHeight) {
+    ctx.font = font;
+    ctx.fillStyle = fill;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lines = text.split('\n');
+    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+    lines.forEach((line, i) => ctx.fillText(line, x, startY + i * lineHeight));
+  }
+
+  function canvasToBlob(canvas) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('No se pudo crear el PNG')), 'image/png');
+    });
+  }
+
+  async function generarImagenFlyer(slots) {
+    await document.fonts?.load('72px "Bebas Neue"');
+    await document.fonts?.load('38px Inter');
+
+    const template = await loadTemplateImage();
+    const canvas = document.createElement('canvas');
+    canvas.width = template.naturalWidth;
+    canvas.height = template.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(template, 0, 0);
+
+    const gridW = FLYER_GRID.x2 - FLYER_GRID.x1;
+    const gridH = FLYER_GRID.y2 - FLYER_GRID.y1;
+    const cx = FLYER_GRID.x1 + gridW / 2;
+    const padX = 50;
+    const padY = 30;
+    const lime = '#c3f950';
+    const white = '#ffffff';
+    const divider = '#3c583e';
+
+    if (!slots.length) {
+      drawCenteredText(ctx, 'SIN TURNOS\nDISPONIBLES', cx, FLYER_GRID.y1 + gridH / 2, '700 38px Inter, sans-serif', lime, 48);
+      return canvas;
+    }
+
+    const first = slots[0];
+    const monthNumber = Number(first.month || first.fecha.split('-')[1]);
+    const month = MONTHS_FULL[monthNumber - 1].toUpperCase();
+    const fechaLabel = `${first.dia}  ${first.date} DE ${month}`;
+    const nRows = 1 + slots.length;
+    const areaH = gridH - padY * 2;
+    const sizes = slots.length <= 3
+      ? { fecha: 38, hora: 72, hs: 36 }
+      : slots.length <= 5
+        ? { fecha: 34, hora: 62, hs: 30 }
+        : { fecha: 30, hora: 52, hs: 26 };
+    const rowH = Math.min(Math.floor(areaH / nRows), 120);
+    const totalH = nRows * rowH;
+    let y = FLYER_GRID.y1 + padY + Math.max(0, Math.floor((areaH - totalH) / 2));
+    const xLeft = FLYER_GRID.x1 + padX;
+    const xRight = FLYER_GRID.x2 - padX;
+
+    drawCenteredText(ctx, fechaLabel, cx, y + rowH / 2, `700 ${sizes.fecha}px Inter, sans-serif`, lime, sizes.fecha + 8);
+    y += rowH;
+    ctx.strokeStyle = divider;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xLeft, y - 6);
+    ctx.lineTo(xRight, y - 6);
+    ctx.stroke();
+
+    for (const slot of slots) {
+      const cy = y + rowH / 2;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.font = `${sizes.hora}px "Bebas Neue", sans-serif`;
+      const horaW = ctx.measureText(slot.hora).width;
+      ctx.font = `700 ${sizes.hs}px Inter, sans-serif`;
+      const sepW = ctx.measureText(' ').width;
+      const hsW = ctx.measureText('HS').width;
+      const xHora = cx - (horaW + sepW + hsW) / 2;
+
+      ctx.font = `${sizes.hora}px "Bebas Neue", sans-serif`;
+      ctx.fillStyle = white;
+      ctx.fillText(slot.hora, xHora, cy);
+      ctx.font = `700 ${sizes.hs}px Inter, sans-serif`;
+      ctx.fillStyle = lime;
+      ctx.fillText('HS', xHora + horaW + sepW, cy);
+      y += rowH;
+    }
+
+    return canvas;
+  }
+
+  async function generarFlyerManual() {
+    try {
+      setDisabled(true);
+      toast('Generando flyer...', 'info');
+      const r = await fetch(`${API_URL}?action=getTurnos`);
+      const res = await r.json();
+      if (!res.success) throw new Error(res.error);
+
+      const slots = getSlotsLibresFlyer(res.data);
+      const canvas = await generarImagenFlyer(slots);
+      const blob = await canvasToBlob(canvas);
+      const url = URL.createObjectURL(blob);
+      const now = getArgentinaNow();
+      const fecha = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0'),
+      ].join('-');
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `turnos_${fecha}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast(`✓ Flyer generado (${slots.length} turnos libres)`, 'success');
+    } catch(e) {
+      toast('Error: ' + e.message, 'error');
+    } finally {
+      setDisabled(false);
+    }
+  }
+
   function confirmClearNonFixed() {
     document.getElementById('modalMessage').textContent = '¿Eliminás todas las reservas normales? Los turnos fijos se mantienen.';
     modalAction = async () => {
