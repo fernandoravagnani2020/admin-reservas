@@ -67,8 +67,8 @@ function getArgToday() {
   return { y: +parts.year, m: +parts.month, d: +parts.day };
 }
 
-// ── getTurnos: arma la semana de 7 días desde hoy ──
-async function getTurnos(res) {
+// ── Arma la semana de 7 días desde hoy (reutilizado por getTurnos y getTodo) ──
+async function buildWeek() {
   const { y, m, d } = getArgToday();
   const base = Date.UTC(y, m - 1, d);
   const days = [];
@@ -116,7 +116,35 @@ async function getTurnos(res) {
     };
   });
 
+  return { week, fixedSlotsByDay };
+}
+
+async function getTurnos(res) {
+  const { week, fixedSlotsByDay } = await buildWeek();
   return ok(res, { week, fixedSlotsByDay });
+}
+
+// Lee toda la config (precios, descuento, promociones) en una query.
+async function readConfig() {
+  const data = await rest(`config?select=clave,valor`);
+  const map = Object.fromEntries((data || []).map((r) => [r.clave, r.valor]));
+  return {
+    precios: map.precios || { semana: {}, finDeSemana: {} },
+    descuento: map.descuento || { activo: false, porcentaje: 10, minutosAntes: 90 },
+    promociones: map.promociones || {},
+  };
+}
+
+// ── getTodo: payload combinado que consume la web pública (PadelLive) ──
+async function getTodo(res) {
+  const [{ week }, cfg] = await Promise.all([buildWeek(), readConfig()]);
+  return ok(res, {
+    week,
+    timeSlots: SLOTS,
+    precios: cfg.precios,
+    descuento: cfg.descuento,
+    promociones: cfg.promociones,
+  });
 }
 
 // ── Reservas ──
@@ -153,12 +181,8 @@ async function toggleTurnoFijo(res, body) {
 
 // ── Precios / descuento ──
 async function getPrecios(res) {
-  const data = await rest(`config?select=clave,valor&clave=in.(precios,descuento)`);
-  const map = Object.fromEntries((data || []).map((r) => [r.clave, r.valor]));
-  return ok(res, {
-    precios: map.precios || { semana: {}, finDeSemana: {} },
-    descuento: map.descuento || { activo: false, porcentaje: 10, minutosAntes: 90 },
-  });
+  const cfg = await readConfig();
+  return ok(res, { precios: cfg.precios, descuento: cfg.descuento });
 }
 
 async function guardarPrecios(res, body) {
@@ -172,8 +196,8 @@ async function guardarPrecios(res, body) {
 
 // ── Promociones ──
 async function getPromociones(res) {
-  const data = await rest(`config?select=valor&clave=eq.promociones`);
-  return ok(res, data?.[0]?.valor || {});
+  const cfg = await readConfig();
+  return ok(res, cfg.promociones);
 }
 
 async function guardarPromociones(res, body) {
@@ -216,6 +240,7 @@ module.exports = async function handler(req, res) {
     switch (action) {
       // Lecturas (GET)
       case 'getTurnos':                return await getTurnos(res);
+      case 'getTodo':                  return await getTodo(res);
       case 'getPrecios':               return await getPrecios(res);
       case 'getPromociones':           return await getPromociones(res);
       // Escrituras (POST)
