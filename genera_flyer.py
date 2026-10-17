@@ -2,7 +2,8 @@
 """
 genera_flyer.py — Genera imagen de turnos disponibles y la envía por mail.
 
-Muestra los turnos libres de HOY a partir de las 14:30.
+Muestra los turnos libres de HOY a partir del primer turno de la tarde
+(14:30 hasta el 31/10/2026, 14:00 desde el 01/11/2026).
 
 Uso:
     python3 genera_flyer.py              # genera imagen, la envía si EMAIL_* está config.
@@ -32,7 +33,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 # ── Rutas ─────────────────────────────────────────────────────────────────────
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -40,31 +41,48 @@ TEMPLATE   = os.path.join(BASE_DIR, 'public', 'Plantilla turnos.PNG')
 if not os.path.exists(TEMPLATE):
     TEMPLATE = os.path.join(BASE_DIR, 'Plantilla turnos.PNG')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'flyers')
-FONT_BLACK = os.environ.get('FONT_BLACK', '/Users/fernandoravagnani/Library/Fonts/CamptonBlack.otf')
-FONT_BOLD  = os.environ.get('FONT_BOLD',  '/Users/fernandoravagnani/Library/Fonts/CamptonBold.otf')
+FONTS_DIR  = os.path.join(BASE_DIR, 'fonts')
+FONT_MONO_BOLD = os.path.join(FONTS_DIR, 'ChivoMonoExtraBold.ttf')
+FONT_MONO      = os.path.join(FONTS_DIR, 'ChivoMonoMedium.ttf')
+FONT_DATE      = os.path.join(FONTS_DIR, 'ArchivoExtraBold.ttf')
 
 # ── API ───────────────────────────────────────────────────────────────────────
-API_URL = (
-    'https://script.google.com/macros/s/'
-    'AKfycbyd4O4dWAUnUgGeyok35PCeGSRAbxLu4uLfh6_WQQiOYSREVlkX6Dpru7sI3Fiuusn0/exec'
-)
-TIME_SLOTS  = ['09:30','11:00','12:30','14:30','16:00','17:30','19:00','20:30','22:00']
+API_URL = 'https://admin-reservas-seven.vercel.app/exec'
+# Grilla de turnos (90 min) según la fecha. Cada entrada rige desde 'desde' (inclusive)
+# hasta que empieza la siguiente. Mantener igual en api/exec.js e index.html.
+HORARIOS = [
+    {'desde': '0000-01-01', 'inicio_flyer': '14:30',
+     'slots': ['09:30','11:00','12:30','14:30','16:00','17:30','19:00','20:30','22:00']},
+    {'desde': '2026-11-01', 'inicio_flyer': '14:00',
+     'slots': ['09:30','11:00','12:30','14:00','15:30','17:00','18:30','20:00','21:30','23:00']},
+]
 DIAS_FDS    = ['SÁBADO', 'DOMINGO']
+DIAS_SEMANA = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO']
 MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
-HORA_INICIO = '14:30'   # primer turno a incluir en el flyer
+def horario_for_date(fecha: str) -> dict:
+    return [h for h in HORARIOS if h['desde'] <= fecha][-1]
 
-# ── Área de la grilla en la plantilla (814×1446 px) ───────────────────────────
-GRID = dict(x1=60, y1=220, x2=754, y2=1062)
-GRID_W = GRID['x2'] - GRID['x1']
-GRID_H = GRID['y2'] - GRID['y1']
-PAD_X  = 50
-PAD_Y  = 30
+def hora_inicio_hoy() -> str:
+    """Primer turno a incluir en el flyer de hoy."""
+    return horario_for_date(now_art().strftime('%Y-%m-%d'))['inicio_flyer']
+
+# ── Diseño "Marcador" (plantilla 814×1446, ver scripts/build_plantilla.py) ────
+ROWS_Y1, ROWS_Y2 = 480, 1056          # zona de filas dentro de la pizarra
+COL_X  = (92, 371, 551)               # HORA · HASTA · ESTADO
+ROW_X2 = 722
 
 # ── Colores ───────────────────────────────────────────────────────────────────
-LIME    = (195, 249, 80)
-WHITE   = (255, 255, 255)
-DIVIDER = (60, 88, 62)
+BG       = (15, 15, 13)
+IVORY    = (242, 238, 227)
+AMBER    = (255, 178, 26)
+GREY     = (138, 134, 122)
+UNTIL    = (183, 178, 165)
+ROW_LINE = (36, 36, 31)
+FLAP_TOP = (38, 38, 31)
+FLAP_BOT = (28, 28, 24)
+DIM_TXT  = (74, 72, 64)
+DIM_ST   = (111, 107, 96)
 
 
 # ── Cargar .env ───────────────────────────────────────────────────────────────
@@ -114,7 +132,7 @@ def fetch_api() -> dict:
     return data['data']
 
 def get_libre_slots(api_data: dict) -> list:
-    """Devuelve los turnos libres de HOY a partir de HORA_INICIO."""
+    """Devuelve los turnos libres de HOY a partir del inicio del flyer."""
     precios = api_data.get('precios')
     hoy     = now_art().date()
     slots   = []
@@ -123,8 +141,9 @@ def get_libre_slots(api_data: dict) -> list:
         fecha = f"{day['year']}-{day['month'].zfill(2)}-{day['date'].zfill(2)}"
         if datetime.strptime(fecha, '%Y-%m-%d').date() != hoy:
             continue
-        for hora in TIME_SLOTS:
-            if hora < HORA_INICIO:
+        horario = horario_for_date(fecha)
+        for hora in horario['slots']:
+            if hora < horario['inicio_flyer']:
                 continue
             if turno_en_curso(fecha, hora) or turno_finalizado(fecha, hora):
                 continue
@@ -142,62 +161,92 @@ def get_libre_slots(api_data: dict) -> list:
 
 
 # ── Generar imagen ────────────────────────────────────────────────────────────
+def _spaced(draw, x, baseline, text, fnt, fill, tracking, align='left'):
+    """Texto con letter-spacing en px, anclado a la línea base."""
+    widths = [fnt.getlength(ch) for ch in text]
+    total  = sum(widths) + tracking * (len(text) - 1)
+    if align == 'right':
+        x -= total
+    for ch, w in zip(text, widths):
+        draw.text((x, baseline), ch, font=fnt, fill=fill, anchor='ls')
+        x += w + tracking
+
+def _cap_baseline(fnt, cy):
+    """Línea base que centra verticalmente mayúsculas/dígitos en cy."""
+    top = fnt.getbbox('0', anchor='ls')[1]
+    return cy - top / 2
+
+def _draw_flaps(draw, x, cy, hora, size, color):
+    """Hora en fichas tipo pizarra de aeropuerto; x = borde izquierdo."""
+    fnt   = ImageFont.truetype(FONT_MONO_BOLD, size)
+    tile_w, tile_h = 0.7 * size, 1.24 * size
+    top   = cy - tile_h / 2
+    split = max(2, round(tile_h * 0.016))
+    base  = _cap_baseline(fnt, cy)
+    for ch in hora:
+        if ch == ':':
+            w = 0.32 * size
+            draw.text((x + w / 2, base), ':', font=fnt, fill=GREY, anchor='ms')
+            x += w
+            continue
+        box = [x, top, x + tile_w, top + tile_h]
+        r   = 0.08 * size
+        draw.rounded_rectangle(box, radius=r, fill=FLAP_BOT)
+        draw.rounded_rectangle([x, top, x + tile_w, cy], radius=r, fill=FLAP_TOP, corners=(True, True, False, False))
+        draw.rectangle([x, cy - split / 2, x + tile_w, cy + split / 2], fill=BG)
+        draw.text((x + tile_w / 2, base), ch, font=fnt, fill=color, anchor='ms')
+        x += tile_w + 0.07 * size
+
+def _draw_dot(img, cx, cy, color, glow):
+    r = 7
+    if glow:
+        layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
+        ImageDraw.Draw(layer).ellipse([cx - r - 4, cy - r - 4, cx + r + 4, cy + r + 4], fill=color + (150,))
+        img.alpha_composite(layer.filter(ImageFilter.GaussianBlur(8)))
+    ImageDraw.Draw(img).ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
+
 def generate_flyer(slots: list, output_path: str) -> None:
     img  = Image.open(TEMPLATE).convert('RGBA')
     draw = ImageDraw.Draw(img)
-    cx   = GRID['x1'] + GRID_W // 2
 
-    if not slots:
-        fnt = ImageFont.truetype(FONT_BOLD, 38)
-        draw.text(
-            (cx, GRID['y1'] + GRID_H // 2),
-            'SIN TURNOS\nDISPONIBLES',
-            font=fnt, fill=LIME, anchor='mm', align='center',
-        )
-        _save(img, output_path)
-        return
+    # Fecha del día entre el título y la pizarra: "SÁBADO 17 DE OCTUBRE"
+    hoy   = now_art()
+    dia   = slots[0]['dia'] if slots else DIAS_SEMANA[hoy.weekday()]
+    label = f"{dia} {hoy.day} DE {MONTH_NAMES[hoy.month - 1].upper()}"
+    size_f = 44
+    while True:   # achicar si no entra en el ancho (ej. MIÉRCOLES 30 DE SEPTIEMBRE)
+        fnt_f = ImageFont.truetype(FONT_DATE, size_f)
+        if fnt_f.getlength(label) + (len(label) - 1) <= 694 or size_f <= 28:
+            break
+        size_f -= 2
+    _spaced(draw, 60, 388, label, fnt_f, IVORY, 1)
 
-    s0          = slots[0]
-    mes         = MONTH_NAMES[int(s0['month']) - 1]
-    fecha_label = f"{s0['dia']}  {s0['date']} DE {mes.upper()}"
-
-    n_rows = 1 + len(slots)
-    area_h = GRID_H - PAD_Y * 2
-
-    if len(slots) <= 3:
-        sz_fecha, sz_hora, sz_hs = 38, 72, 36
-    elif len(slots) <= 5:
-        sz_fecha, sz_hora, sz_hs = 34, 62, 30
+    n = len(slots)
+    if n:
+        rows = [(s['hora'], _slot_end(s['fecha'], s['hora']).strftime('%H:%M'), 'LIBRE') for s in slots]
+        # hasta 8 turnos entran en la pizarra (576 px de alto)
+        size = 74 if n <= 3 else 64 if n <= 5 else 52 if n <= 6 else 46
+        pad  = 26 if n <= 3 else 14 if n <= 6 else 6
     else:
-        sz_fecha, sz_hora, sz_hs = 30, 52, 26
+        rows = [('--:--', '--:--', 'COMPLETO')] * 3
+        size, pad = 70, 22
 
-    row_h   = min(area_h // n_rows, 120)
-    total_h = n_rows * row_h
-    y       = GRID['y1'] + PAD_Y + max(0, (area_h - total_h) // 2)
-    x_left  = GRID['x1'] + PAD_X
-    x_right = GRID['x2'] - PAD_X
+    tile_h = 1.24 * size
+    row_h  = 2 + 2 * pad + tile_h
+    y      = ROWS_Y1 + max(0, (ROWS_Y2 - ROWS_Y1 - row_h * len(rows)) / 2)
 
-    fnt_fecha = ImageFont.truetype(FONT_BOLD,  sz_fecha)
-    fnt_hora  = ImageFont.truetype(FONT_BLACK, sz_hora)
-    fnt_hs    = ImageFont.truetype(FONT_BOLD,  sz_hs)
-
-    # Header de fecha
-    draw.text((cx, y + row_h // 2), fecha_label, font=fnt_fecha, fill=LIME, anchor='mm')
-    y += row_h
-    draw.line([(x_left, y - 6), (x_right, y - 6)], fill=DIVIDER, width=1)
-
-    # Filas de turnos — centradas con "HS" al lado
-    for slot in slots:
-        cy = y + row_h // 2
-        # Medir ancho total de "HH:MM HS" para centrarlo como bloque
-        w_hora = fnt_hora.getlength(slot['hora'])
-        w_sep  = fnt_hs.getlength(' ')
-        w_hs   = fnt_hs.getlength('HS')
-        total_w = w_hora + w_sep + w_hs
-        x_hora = cx - total_w / 2
-        x_hs   = x_hora + w_hora + w_sep
-        draw.text((x_hora, cy), slot['hora'], font=fnt_hora, fill=WHITE, anchor='lm')
-        draw.text((x_hs,   cy), 'HS',         font=fnt_hs,  fill=LIME,  anchor='lm')
+    fnt_until = ImageFont.truetype(FONT_MONO, 30 if n <= 6 else 26)
+    fnt_state = ImageFont.truetype(FONT_MONO_BOLD, 26 if n <= 6 else 22)
+    for hora, hasta, estado in rows:
+        draw.rectangle([COL_X[0], y, ROW_X2, y + 1], fill=ROW_LINE)
+        cy = y + 2 + pad + tile_h / 2
+        _draw_flaps(draw, COL_X[0], cy, hora, size, IVORY if n else DIM_TXT)
+        draw.text((COL_X[1], _cap_baseline(fnt_until, cy)), hasta, font=fnt_until,
+                  fill=UNTIL if n else DIM_TXT, anchor='ls')
+        st_color = AMBER if n else DIM_ST
+        _draw_dot(img, COL_X[2] + 7, cy, st_color, glow=bool(n))
+        draw = ImageDraw.Draw(img)
+        _spaced(draw, COL_X[2] + 24, _cap_baseline(fnt_state, cy), estado, fnt_state, st_color, 2.6)
         y += row_h
 
     _save(img, output_path)
@@ -224,12 +273,12 @@ def send_mail(image_path: str, slots: list) -> None:
 
     if n_libres == 0:
         asunto  = f"Negro Padel — Sin turnos disponibles ({dia_str})"
-        cuerpo  = f"No hay turnos disponibles para hoy {dia_str} desde las {HORA_INICIO}."
+        cuerpo  = f"No hay turnos disponibles para hoy {dia_str} desde las {hora_inicio_hoy()}."
     else:
         horas   = ', '.join(s['hora'] for s in slots)
         asunto  = f"Negro Padel — {n_libres} turno(s) disponible(s) hoy ({dia_str})"
         cuerpo  = (
-            f"Turnos libres para hoy {dia_str} desde las {HORA_INICIO}:\n\n"
+            f"Turnos libres para hoy {dia_str} desde las {hora_inicio_hoy()}:\n\n"
             + '\n'.join(f"  • {s['hora']}  —  {fmt_price(s['precio'])}" for s in slots)
             + f"\n\nEl flyer está adjunto."
         )
@@ -279,7 +328,7 @@ if __name__ == '__main__':
     try:
         api_data = fetch_api()
         slots    = get_libre_slots(api_data)
-        print(f"Turnos libres hoy desde {HORA_INICIO}: {len(slots)}")
+        print(f"Turnos libres hoy desde {hora_inicio_hoy()}: {len(slots)}")
 
         generate_flyer(slots, out)
 

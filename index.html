@@ -15,16 +15,23 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     @font-face {
-      font-family: 'Campton Black';
-      src: url('fonts/CamptonBlack.otf') format('opentype');
-      font-weight: 900;
+      font-family: 'Archivo Flyer';
+      src: url('fonts/ArchivoExtraBold.ttf') format('truetype');
+      font-weight: 800;
       font-style: normal;
       font-display: swap;
     }
     @font-face {
-      font-family: 'Campton Bold';
-      src: url('fonts/CamptonBold.otf') format('opentype');
-      font-weight: 700;
+      font-family: 'Chivo Mono Flyer';
+      src: url('fonts/ChivoMonoMedium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Chivo Mono Flyer';
+      src: url('fonts/ChivoMonoExtraBold.ttf') format('truetype');
+      font-weight: 800;
       font-style: normal;
       font-display: swap;
     }
@@ -250,15 +257,32 @@
 
 <script>
   const API_URL = '/exec';
-  const SLOTS   = ['09:30','11:00','12:30','14:30','16:00','17:30','19:00','20:30','22:00',];
+  // Grilla de turnos (90 min) según la fecha. Cada entrada rige desde `desde` (inclusive)
+  // hasta que empieza la siguiente. Mantener igual en api/exec.js y genera_flyer.py.
+  const HORARIOS = [
+    { desde: '0000-01-01', inicioFlyer: '14:30', slots: ['09:30','11:00','12:30','14:30','16:00','17:30','19:00','20:30','22:00'] },
+    { desde: '2026-11-01', inicioFlyer: '14:00', slots: ['09:30','11:00','12:30','14:00','15:30','17:00','18:30','20:00','21:30','23:00'] },
+  ];
+  const horarioForDate = dateKey => HORARIOS.filter(h => h.desde <= dateKey).pop();
+  const slotsForDay = day => day.timeSlots || horarioForDate(getFechaTurno(day)).slots;
+  // Precios y promos: todos los horarios que rigen de hoy en adelante (en la transición, ambos)
+  const SLOTS = (() => {
+    const hoy = getFechaTurno({ dateKey: getArgentinaNow().toLocaleDateString('en-CA') });
+    const vigentes = HORARIOS.filter((h, i) => !HORARIOS[i + 1] || HORARIOS[i + 1].desde > hoy);
+    return [...new Set(vigentes.flatMap(h => h.slots))].sort();
+  })();
   const MONTHS  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const DIAS    = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
   const MONTHS_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const HORA_INICIO_FLYER = '14:30';
   const TEMPLATE_FLYER = 'Plantilla turnos.PNG';
-  const FLYER_GRID = { x1: 60, y1: 220, x2: 754, y2: 1062 };
-  const FONT_BLACK_FLYER = '"Campton Black", "Arial Black", sans-serif';
-  const FONT_BOLD_FLYER = '"Campton Bold", Arial, sans-serif';
+  // Diseño "Marcador" (ver scripts/build_plantilla.py para la parte fija)
+  const FLYER_ROWS = { y1: 480, y2: 1056, x2: 722, cols: [92, 371, 551] };
+  const FONT_MONO_FLYER = '"Chivo Mono Flyer", ui-monospace, monospace';
+  const FONT_DATE_FLYER = '"Archivo Flyer", Arial, sans-serif';
+  const FLYER_COLORS = {
+    bg: '#0f0f0d', ivory: '#f2eee3', amber: '#ffb21a', grey: '#8a867a', until: '#b7b2a5',
+    rowLine: '#24241f', flapTop: '#26261f', flapBot: '#1c1c18', dimTxt: '#4a4840', dimSt: '#6f6b60',
+  };
 
   let data = { week: [], fixedSlotsByDay: {} };
   let dayIdx = 0, modalAction = null, toastTimer;
@@ -310,7 +334,7 @@
 
   function renderSlots() {
     const day = data.week[dayIdx]; if (!day) return;
-    document.getElementById('schedule').innerHTML = SLOTS.map((time, ti) => {
+    document.getElementById('schedule').innerHTML = slotsForDay(day).map(time => {
       const occ   = day.slots[time];
       const fixed = data.fixedSlotsByDay[day.day]?.[time];
       if (occ) return `
@@ -329,7 +353,7 @@
         <div class="slot">
           <div class="slot-time">${time}</div>
           <div class="slot-wrap">
-            <input class="slot-input" id="inp-${ti}-${time}" placeholder="Nombre del jugador"
+            <input class="slot-input" id="inp-${time}" placeholder="Nombre del jugador"
               onkeypress="if(event.key==='Enter')addPlayer('${day.dateKey}','${day.day}','${time}')">
             <button class="btn-add" onclick="addPlayer('${day.dateKey}','${day.day}','${time}')">+</button>
           </div>
@@ -338,7 +362,7 @@
   }
 
   function updateStats() {
-    const total = data.week.length * SLOTS.length;
+    const total = data.week.reduce((n, d) => n + slotsForDay(d).length, 0);
     let occ = 0, fixed = 0;
     data.week.forEach(d => occ += Object.keys(d.slots).length);
     Object.values(data.fixedSlotsByDay).forEach(ds => fixed += Object.keys(ds).length);
@@ -349,8 +373,7 @@
   }
 
   async function addPlayer(dateKey, day, time) {
-    const ti = SLOTS.indexOf(time);
-    const inp = document.getElementById(`inp-${ti}-${time}`);
+    const inp = document.getElementById(`inp-${time}`);
     const name = inp.value.trim().toUpperCase();
     if (!name) { toast('Ingresá un nombre', 'error'); return; }
     try {
@@ -530,8 +553,9 @@
       const fecha = getFechaTurno(day);
       if (fecha !== todayKey) continue;
 
-      for (const hora of SLOTS) {
-        if (hora < HORA_INICIO_FLYER) continue;
+      const { slots: horasDelDia, inicioFlyer } = horarioForDate(fecha);
+      for (const hora of horasDelDia) {
+        if (hora < inicioFlyer) continue;
         if (turnoEnCurso(fecha, hora) || turnoFinalizado(fecha, hora)) continue;
         if (day.slots?.[hora]) continue;
         slots.push({ dia: day.day, fecha, date: day.date, month: day.month, hora });
@@ -549,14 +573,70 @@
     });
   }
 
-  function drawCenteredText(ctx, text, x, y, font, fill, lineHeight) {
-    ctx.font = font;
-    ctx.fillStyle = fill;
+  // Texto con letter-spacing en px, anclado a la línea base
+  function drawSpaced(ctx, text, x, baseline, tracking, align = 'left') {
+    const chars = [...text];
+    const widths = chars.map(ch => ctx.measureText(ch).width);
+    const total = widths.reduce((a, w) => a + w, 0) + tracking * (chars.length - 1);
+    if (align === 'right') x -= total;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    chars.forEach((ch, i) => { ctx.fillText(ch, x, baseline); x += widths[i] + tracking; });
+  }
+
+  // Línea base que centra verticalmente mayúsculas/dígitos en cy (usa el font actual)
+  function capBaseline(ctx, cy) {
+    return cy + ctx.measureText('0').actualBoundingBoxAscent / 2;
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Hora en fichas tipo pizarra de aeropuerto; x = borde izquierdo
+  function drawFlaps(ctx, x, cy, hora, size, color) {
+    const c = FLYER_COLORS;
+    const tileW = 0.7 * size, tileH = 1.24 * size;
+    const top = cy - tileH / 2;
+    const split = Math.max(2, Math.round(tileH * 0.016));
+    ctx.font = `800 ${size}px ${FONT_MONO_FLYER}`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const lines = text.split('\n');
-    const startY = y - ((lines.length - 1) * lineHeight) / 2;
-    lines.forEach((line, i) => ctx.fillText(line, x, startY + i * lineHeight));
+    ctx.textBaseline = 'alphabetic';
+    const base = capBaseline(ctx, cy);
+    for (const ch of hora) {
+      if (ch === ':') {
+        const w = 0.32 * size;
+        ctx.fillStyle = c.grey;
+        ctx.fillText(':', x + w / 2, base);
+        x += w;
+        continue;
+      }
+      ctx.save();
+      roundRect(ctx, x, top, tileW, tileH, 0.08 * size);
+      ctx.clip();
+      ctx.fillStyle = c.flapTop;
+      ctx.fillRect(x, top, tileW, tileH / 2);
+      ctx.fillStyle = c.flapBot;
+      ctx.fillRect(x, cy, tileW, tileH / 2);
+      ctx.fillStyle = c.bg;
+      ctx.fillRect(x, cy - split / 2, tileW, split);
+      ctx.restore();
+      ctx.fillStyle = color;
+      ctx.fillText(ch, x + tileW / 2, base);
+      x += tileW + 0.07 * size;
+    }
+  }
+
+  function finTurno(hora) {
+    const [h, m] = hora.split(':').map(Number);
+    const t = h * 60 + m + 90;
+    return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
   }
 
   function canvasToBlob(canvas) {
@@ -566,8 +646,9 @@
   }
 
   async function generarImagenFlyer(slots) {
-    await document.fonts?.load(`900 72px ${FONT_BLACK_FLYER}`);
-    await document.fonts?.load(`700 38px ${FONT_BOLD_FLYER}`);
+    await document.fonts?.load(`800 74px ${FONT_MONO_FLYER}`);
+    await document.fonts?.load(`500 20px ${FONT_MONO_FLYER}`);
+    await document.fonts?.load(`800 44px ${FONT_DATE_FLYER}`);
 
     const template = await loadTemplateImage();
     const canvas = document.createElement('canvas');
@@ -575,64 +656,58 @@
     canvas.height = template.naturalHeight;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(template, 0, 0);
+    const c = FLYER_COLORS;
+    const [colHora, colHasta, colEstado] = FLYER_ROWS.cols;
 
-    const gridW = FLYER_GRID.x2 - FLYER_GRID.x1;
-    const gridH = FLYER_GRID.y2 - FLYER_GRID.y1;
-    const cx = FLYER_GRID.x1 + gridW / 2;
-    const padX = 50;
-    const padY = 30;
-    const lime = '#c3f950';
-    const white = '#ffffff';
-    const divider = '#3c583e';
-
-    if (!slots.length) {
-      drawCenteredText(ctx, 'SIN TURNOS\nDISPONIBLES', cx, FLYER_GRID.y1 + gridH / 2, `700 38px ${FONT_BOLD_FLYER}`, lime, 48);
-      return canvas;
+    // Fecha del día entre el título y la pizarra: "SÁBADO 17 DE OCTUBRE"
+    const now = getArgentinaNow();
+    const dia = slots[0]?.dia || DIAS[(now.getDay() + 6) % 7];
+    const label = `${dia} ${now.getDate()} DE ${MONTHS_FULL[now.getMonth()].toUpperCase()}`;
+    let sizeF = 44;
+    for (;;) {   // achicar si no entra en el ancho (ej. MIÉRCOLES 30 DE SEPTIEMBRE)
+      ctx.font = `800 ${sizeF}px ${FONT_DATE_FLYER}`;
+      if (ctx.measureText(label).width + (label.length - 1) <= 694 || sizeF <= 28) break;
+      sizeF -= 2;
     }
+    ctx.fillStyle = c.ivory;
+    drawSpaced(ctx, label, 60, 388, 1);
 
-    const first = slots[0];
-    const monthNumber = Number(first.month || first.fecha.split('-')[1]);
-    const month = MONTHS_FULL[monthNumber - 1].toUpperCase();
-    const fechaLabel = `${first.dia}  ${first.date} DE ${month}`;
-    const nRows = 1 + slots.length;
-    const areaH = gridH - padY * 2;
-    const sizes = slots.length <= 3
-      ? { fecha: 38, hora: 72, hs: 36 }
-      : slots.length <= 5
-        ? { fecha: 34, hora: 62, hs: 30 }
-        : { fecha: 30, hora: 52, hs: 26 };
-    const rowH = Math.min(Math.floor(areaH / nRows), 120);
-    const totalH = nRows * rowH;
-    let y = FLYER_GRID.y1 + padY + Math.max(0, Math.floor((areaH - totalH) / 2));
-    const xLeft = FLYER_GRID.x1 + padX;
-    const xRight = FLYER_GRID.x2 - padX;
+    const n = slots.length;
+    const rows = n
+      ? slots.map(s => ({ hora: s.hora, hasta: finTurno(s.hora), estado: 'LIBRE' }))
+      : Array(3).fill({ hora: '--:--', hasta: '--:--', estado: 'COMPLETO' });
+    // hasta 8 turnos entran en la pizarra (576 px de alto)
+    const size = n ? (n <= 3 ? 74 : n <= 5 ? 64 : n <= 6 ? 52 : 46) : 70;
+    const pad = n ? (n <= 3 ? 26 : n <= 6 ? 14 : 6) : 22;
+    const tileH = 1.24 * size;
+    const rowH = 2 + 2 * pad + tileH;
+    let y = FLYER_ROWS.y1 + Math.max(0, (FLYER_ROWS.y2 - FLYER_ROWS.y1 - rowH * rows.length) / 2);
+    const stColor = n ? c.amber : c.dimSt;
 
-    drawCenteredText(ctx, fechaLabel, cx, y + rowH / 2, `700 ${sizes.fecha}px ${FONT_BOLD_FLYER}`, lime, sizes.fecha + 8);
-    y += rowH;
-    ctx.strokeStyle = divider;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(xLeft, y - 6);
-    ctx.lineTo(xRight, y - 6);
-    ctx.stroke();
+    for (const row of rows) {
+      ctx.fillStyle = c.rowLine;
+      ctx.fillRect(colHora, y, FLYER_ROWS.x2 - colHora, 2);
+      const cy = y + 2 + pad + tileH / 2;
 
-    for (const slot of slots) {
-      const cy = y + rowH / 2;
+      drawFlaps(ctx, colHora, cy, row.hora, size, n ? c.ivory : c.dimTxt);
+
+      ctx.font = `500 ${n <= 6 ? 30 : 26}px ${FONT_MONO_FLYER}`;
+      ctx.fillStyle = n ? c.until : c.dimTxt;
       ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.font = `900 ${sizes.hora}px ${FONT_BLACK_FLYER}`;
-      const horaW = ctx.measureText(slot.hora).width;
-      ctx.font = `700 ${sizes.hs}px ${FONT_BOLD_FLYER}`;
-      const sepW = ctx.measureText(' ').width;
-      const hsW = ctx.measureText('HS').width;
-      const xHora = cx - (horaW + sepW + hsW) / 2;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(row.hasta, colHasta, capBaseline(ctx, cy));
 
-      ctx.font = `900 ${sizes.hora}px ${FONT_BLACK_FLYER}`;
-      ctx.fillStyle = white;
-      ctx.fillText(slot.hora, xHora, cy);
-      ctx.font = `700 ${sizes.hs}px ${FONT_BOLD_FLYER}`;
-      ctx.fillStyle = lime;
-      ctx.fillText('HS', xHora + horaW + sepW, cy);
+      ctx.save();
+      if (n) { ctx.shadowColor = c.amber; ctx.shadowBlur = 14; }
+      ctx.fillStyle = stColor;
+      ctx.beginPath();
+      ctx.arc(colEstado + 7, cy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.font = `800 ${n <= 6 ? 26 : 22}px ${FONT_MONO_FLYER}`;
+      ctx.fillStyle = stColor;
+      drawSpaced(ctx, row.estado, colEstado + 24, capBaseline(ctx, cy), 2.6);
       y += rowH;
     }
 

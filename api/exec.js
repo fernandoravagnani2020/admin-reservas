@@ -8,7 +8,14 @@
 const SB  = process.env.SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const SLOTS = ['09:30','11:00','12:30','14:30','16:00','17:30','19:00','20:30','22:00'];
+// Grilla de turnos (90 min) según la fecha. Cada entrada rige desde `desde` (inclusive)
+// hasta que empieza la siguiente. Mantener igual en index.html y genera_flyer.py.
+const HORARIOS = [
+  { desde: '0000-01-01', slots: ['09:30','11:00','12:30','14:30','16:00','17:30','19:00','20:30','22:00'] },
+  { desde: '2026-11-01', slots: ['09:30','11:00','12:30','14:00','15:30','17:00','18:30','20:00','21:30','23:00'] },
+];
+const slotsForDate = (dateKey) =>
+  HORARIOS.filter((h) => h.desde <= dateKey).pop().slots;
 // getUTCDay(): 0=Domingo .. 6=Sábado
 const DIAS_BY_DOW = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -113,6 +120,7 @@ async function buildWeek() {
     return {
       day: day.dia, date: day.date, month: day.month, year: day.year,
       dateKey: day.dateKey, slots,
+      timeSlots: slotsForDate(day.dateKey),   // grilla de ese día (cambia el 01/11/2026)
     };
   });
 
@@ -140,7 +148,7 @@ async function getTodo(res) {
   const [{ week }, cfg] = await Promise.all([buildWeek(), readConfig()]);
   return ok(res, {
     week,
-    timeSlots: SLOTS,
+    timeSlots: week[0].timeSlots,   // grilla de hoy; cada día trae la suya en week[i].timeSlots
     precios: cfg.precios,
     descuento: cfg.descuento,
     promociones: cfg.promociones,
