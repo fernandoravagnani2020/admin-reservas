@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#0f0f0d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Admin Reservas">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=Chivo+Mono:wght@500;800&display=swap" rel="stylesheet">
   <title>Negro Padel · Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,221 +35,325 @@
       font-style: normal;
       font-display: swap;
     }
-    html, body { height: 100%; overflow-x: hidden; }
+    html, body { min-height: 100%; overflow-x: hidden; }
+    /* Panel de trabajo con la identidad "Marcador" del flyer: negro de marca arriba,
+       superficie clara para leer al sol, ámbar solo para "fijo" y lo activo. */
     :root {
-      --bg: #f5f5f5; --card: #fff; --border: rgba(0,0,0,0.08);
-      --text: #111; --text2: #666; --text3: #aaa;
-      --green: #16a34a; --red: #dc2626; --orange: #f97316; --yellow: #eab308;
-      --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom);
+      --bg: #f2f1ed; --surface: #ffffff; --sunken: #f7f6f2;
+      --ink: #141412; --ink2: #5c5a53; --ink3: #9a978d; --line: #e4e2db; --line2: #d6d3ca;
+      --brand: #0f0f0d; --brand-line: #2a2a25; --ivory: #f2eee3; --ivory2: #b7b2a5;
+      --amber: #ffb21a; --amber-ink: #7a4f00; --amber-bg: #fff6e0; --amber-line: #f3d68f;
+      --free: #1f8a4c; --danger: #c8321f; --danger-bg: #fdf0ed;
+      --f-ui: 'Archivo', system-ui, -apple-system, sans-serif;
+      --f-mono: 'Chivo Mono', ui-monospace, 'SF Mono', monospace;
+      --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px);
+      --nav-h: 62px;
     }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--f-ui); font-size: 14px; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+    button, input { font-family: inherit; color: inherit; }
+    .ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
-    .header { background: #0a0a0a; border-bottom: 1px solid rgba(255,255,255,0.07); position: sticky; top: 0; z-index: 100; padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
-    .header-inner { max-width: 960px; margin: 0 auto; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .header-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
-    .header-logo img { width: 28px; height: 28px; object-fit: contain; }
-    .logo-name { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.05em; color: #fff; white-space: nowrap; }
-    .logo-sub  { font-size: 8px; letter-spacing: 0.16em; color: rgba(255,255,255,0.25); text-transform: uppercase; font-weight: 600; }
+    /* ── Header ── */
+    .header { background: var(--brand); color: var(--ivory); position: sticky; top: 0; z-index: 100;
+      padding-top: var(--sat); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .header-inner { max-width: 960px; margin: 0 auto; height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+    .brand img { width: 30px; height: 30px; object-fit: contain; }
+    .brand-name { font-weight: 800; font-stretch: 75%; font-size: 17px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+    .brand-sub { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; color: var(--amber); text-transform: uppercase; margin-top: 3px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .today { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--ivory2); text-transform: uppercase; white-space: nowrap; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--brand-line); background: transparent; color: var(--ivory); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .icon-btn:active { background: var(--brand-line); }
 
-    .tabs { background: #0a0a0a; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; gap: 4px; padding: 0 12px 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .tabs::-webkit-scrollbar { display: none; }
-    .tab { flex-shrink: 0; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; white-space: nowrap; transition: all 0.15s; color: rgba(255,255,255,0.35); background: transparent; }
-    .tab.active { color: #fff; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+    /* ── Navegación: barra inferior en celular, pestañas bajo el header en escritorio ── */
+    .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; background: var(--brand); border-top: 1px solid var(--brand-line);
+      display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px max(6px, env(safe-area-inset-right, 0px)) calc(6px + var(--sab)) max(6px, env(safe-area-inset-left, 0px)); }
+    .tab { border: 0; background: transparent; color: #8a867a; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 8px; cursor: pointer; font-size: 10.5px; font-weight: 600; letter-spacing: 0.01em; }
+    .tab .ic { width: 20px; height: 20px; }
+    .tab.active { color: var(--ivory); }
+    .tab.active .ic { color: var(--amber); }
 
-    .main { max-width: 960px; margin: 0 auto; padding: 14px 14px calc(40px + var(--sab)); }
+    .main { max-width: 960px; margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-left, 0px)) calc(var(--nav-h) + 28px + var(--sab)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
     .panel { display: none; }
-    .panel.active { display: block; }
+    .panel.active { display: flex; flex-direction: column; gap: 14px; }
 
-    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
-    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 6px; text-align: center; }
-    .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--text); line-height: 1; }
-    .stat-num.g { color: var(--green); } .stat-num.r { color: var(--red); } .stat-num.o { color: var(--orange); }
-    .stat-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 2px; }
+    @media (min-width: 820px) {
+      .tabs { position: sticky; top: calc(56px + var(--sat)); bottom: auto; border-top: 0; border-bottom: 1px solid var(--brand-line);
+        display: flex; justify-content: center; gap: 4px; padding: 0 16px 10px; }
+      .tab { flex-direction: row; gap: 8px; padding: 8px 14px; font-size: 13px; }
+      .tab .ic { width: 17px; height: 17px; }
+      .tab.active { background: var(--brand-line); }
+      .main { padding-top: 24px; padding-bottom: 48px; }
+    }
 
-    .day-tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    /* ── Resumen de la semana ── */
+    .summary { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .summary-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .summary-main { display: flex; align-items: baseline; gap: 8px; }
+    .summary-num { font-family: var(--f-mono); font-weight: 800; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+    .summary-lbl { font-size: 13px; color: var(--ink2); }
+    .summary-pct { font-family: var(--f-mono); font-size: 12px; color: var(--ink2); }
+    .bar { height: 6px; border-radius: 99px; background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; display: flex; }
+    .bar i { display: block; height: 100%; background: var(--ink); }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink2); }
+    .legend b { font-family: var(--f-mono); font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; margin-right: 4px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+    .dot.res { background: var(--ink); } .dot.fix { background: var(--amber); } .dot.free { background: var(--free); }
+
+    /* ── Días ── */
+    .day-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .day-tabs::-webkit-scrollbar { display: none; }
-    .day-tab { flex-shrink: 0; padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--card); cursor: pointer; text-align: center; transition: all 0.15s; }
-    .day-tab.active { background: #111; border-color: #111; color: #fff; }
-    .day-tab-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-    .day-tab-date { font-size: 10px; opacity: 0.6; margin-top: 1px; }
+    .day-tab { flex-shrink: 0; width: 64px; padding: 9px 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .day-tab-name { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink2); }
+    .day-tab-date { font-family: var(--f-mono); font-weight: 800; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
+    .day-tab-mon { font-size: 10px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .day-tab .bar { width: 40px; height: 4px; margin-top: 4px; }
+    .day-tab.active { background: var(--brand); border-color: var(--brand); color: var(--ivory); }
+    .day-tab.active .day-tab-name, .day-tab.active .day-tab-mon { color: var(--ivory2); }
+    .day-tab.active .bar { background: var(--brand-line); box-shadow: none; }
+    .day-tab.active .bar i { background: var(--amber); }
 
+    /* ── Turnos ── */
     .slots { display: flex; flex-direction: column; gap: 6px; }
-    .slot { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; display: flex; align-items: center; gap: 10px; }
-    .slot.occupied { border-color: rgba(220,38,38,0.25); background: rgba(220,38,38,0.02); }
-    .slot.fixed    { border-color: rgba(234,179,8,0.4);  background: rgba(234,179,8,0.03); }
-    .slot-time { font-family: 'Bebas Neue', sans-serif; font-size: 21px; color: var(--text); width: 48px; flex-shrink: 0; letter-spacing: 0.02em; line-height: 1; }
-    .slot-body { flex: 1; min-width: 0; }
-    .slot-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .slot-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 6px; border-radius: 99px; margin-top: 2px; }
-    .badge-fixed  { background: rgba(234,179,8,0.15); color: #92400e; }
-    .badge-normal { background: rgba(220,38,38,0.1);  color: var(--red); }
-    .slot-wrap { display: flex; gap: 6px; flex: 1; }
-    .slot-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; outline: none; min-width: 0; }
-    .slot-input:focus { border-color: #111; }
-    .btn-add { width: 34px; height: 34px; border-radius: 7px; border: none; background: #111; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .slot-actions { display: flex; gap: 5px; flex-shrink: 0; }
-    .btn-ic { width: 32px; height: 32px; border-radius: 7px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.15s; }
-    .ic-rm    { background: rgba(220,38,38,0.08); color: var(--red); }
-    .ic-pin   { background: rgba(234,179,8,0.12); color: #92400e; }
-    .ic-unpin { background: rgba(0,0,0,0.06);     color: var(--text3); }
+    .slot { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px 10px 14px; display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 12px; min-height: 60px; }
+    .slot::before { content: ''; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: transparent; }
+    .slot.occupied::before { background: var(--ink); }
+    .slot.fixed { background: var(--amber-bg); border-color: var(--amber-line); }
+    .slot.fixed::before { background: var(--amber); }
+    .slot.past { opacity: 0.5; }
+    .slot-time { font-family: var(--f-mono); font-weight: 800; font-size: 17px; line-height: 1; font-variant-numeric: tabular-nums; }
+    .slot-end { display: block; font-family: var(--f-mono); font-weight: 500; font-size: 11px; color: var(--ink3); margin-top: 4px; }
+    .slot-body { min-width: 0; }
+    .slot-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-state { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink2); margin-top: 3px; }
+    .slot.fixed .slot-state { color: var(--amber-ink); }
+    .slot-state .dot { margin: 0; }
+    .slot-state.live { color: var(--ink); font-weight: 600; }
+    .slot-state.live .dot { background: var(--amber); box-shadow: 0 0 0 3px rgba(255,178,26,0.25); }
+    .slot-wrap { display: flex; gap: 6px; grid-column: 2 / 4; }
+    .slot-input { flex: 1; min-width: 0; height: 40px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; font-size: 14px; outline: none; text-transform: uppercase; }
+    .slot-input::placeholder { text-transform: none; color: var(--ink3); }
+    .slot-input:focus { border-color: var(--ink); background: var(--surface); }
+    .btn-add { width: 40px; height: 40px; border-radius: 8px; border: none; background: var(--ink); color: var(--ivory); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .slot-actions { display: flex; gap: 6px; }
+    .btn-ic { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .btn-ic .ic { width: 16px; height: 16px; }
+    .ic-rm:active { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+    .ic-pin.on { background: var(--amber); border-color: var(--amber); color: var(--brand); }
 
-    .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.03em; color: var(--text); margin-bottom: 12px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
-    .card-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
-    .price-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
-    .price-item:last-child { border-bottom: none; }
-    .price-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--text); }
-    .price-inp { width: 100px; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; text-align: right; outline: none; }
-    .price-inp:focus { border-color: #111; }
-
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    /* ── Formularios (precios, descuento, promos) ── */
+    .section-head { display: flex; flex-direction: column; gap: 4px; }
+    .section-title { font-weight: 800; font-stretch: 80%; font-size: 26px; letter-spacing: 0.01em; line-height: 1.05; text-transform: uppercase; }
+    .section-desc { font-size: 13px; color: var(--ink2); max-width: 60ch; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px; }
+    .card-title { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink3); text-transform: uppercase; padding: 12px 0 8px; border-bottom: 1px solid var(--line); }
+    .prices-grid { display: grid; gap: 14px; }
+    @media (min-width: 640px) { .prices-grid { grid-template-columns: 1fr 1fr; } }
+    .price-item, .field-row, .toggle-row, .promo-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--line); }
+    .price-item:last-child, .field-row:last-child, .toggle-row:last-child, .promo-item:last-child { border-bottom: none; }
+    .price-lbl, .promo-time { font-family: var(--f-mono); font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .affix { display: flex; align-items: center; height: 38px; width: 124px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; gap: 6px; }
+    .affix:focus-within { border-color: var(--ink); background: var(--surface); }
+    .affix span { font-family: var(--f-mono); font-size: 12px; color: var(--ink3); }
+    .affix input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; text-align: right; font-family: var(--f-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+    .field-lbl { font-size: 14px; }
+    .field-hint { display: block; font-size: 12px; color: var(--ink3); margin-top: 2px; }
+    .toggle { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider { position: absolute; inset: 0; background: #ddd; border-radius: 99px; cursor: pointer; transition: 0.2s; }
-    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
-    .toggle input:checked + .toggle-slider { background: var(--green); }
-    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
-    .field-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .field-lbl { font-size: 13px; color: var(--text2); }
-    .field-inp { width: 100px; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; text-align: right; outline: none; }
+    .toggle-slider { position: absolute; inset: 0; background: var(--line2); border-radius: 99px; cursor: pointer; transition: background 0.2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 22px; height: 22px; left: 3px; top: 3px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: transform 0.2s; }
+    .toggle input:checked + .toggle-slider { background: var(--ink); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle input:focus-visible + .toggle-slider { outline: 2px solid var(--amber); outline-offset: 2px; }
 
-    .promo-day { margin-bottom: 14px; }
-    .promo-day-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; }
-    .promo-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
-    .promo-item:last-child { border-bottom: none; }
-    .promo-time { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: var(--text); width: 42px; flex-shrink: 0; }
-    .promo-inp { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 12px; color: var(--text); font-family: 'Inter', sans-serif; outline: none; }
-    .promo-inp:focus { border-color: #111; }
+    .promo-days { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; scrollbar-width: none; }
+    .promo-days::-webkit-scrollbar { display: none; }
+    .chip { flex-shrink: 0; height: 34px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .chip.active { background: var(--brand); border-color: var(--brand); color: var(--ivory); }
+    .chip em { font-style: normal; font-family: var(--f-mono); font-size: 11px; background: var(--amber); color: var(--brand); border-radius: 99px; padding: 1px 6px; }
+    .promo-day { display: none; }
+    .promo-day.active { display: block; }
+    .promo-inp { flex: 1; min-width: 0; height: 38px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; font-size: 13px; outline: none; }
+    .promo-inp:focus { border-color: var(--ink); background: var(--surface); }
 
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 18px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.15s; }
-    .btn:active { transform: scale(0.97); }
-    .btn-primary { background: #111; color: #fff; width: 100%; margin-top: 10px; }
-    .btn-outline  { background: transparent; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.15); font-size: 12px; padding: 5px 12px; }
+    /* ── Botones ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 18px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--ink); color: var(--ivory); width: 100%; }
+    .btn-red  { background: var(--danger); color: #fff; }
+    .btn-gray { background: var(--sunken); color: var(--ink); border: 1px solid var(--line); }
 
-    .tool-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; margin-bottom: 8px; font-family: 'Inter', sans-serif; transition: all 0.15s; }
-    .tool-btn:active { transform: scale(0.98); }
-    .tool-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-    .tool-icon { font-size: 20px; width: 34px; text-align: center; flex-shrink: 0; }
-    .tool-title { font-size: 14px; font-weight: 600; color: var(--text); }
-    .tool-desc  { font-size: 11px; color: var(--text3); margin-top: 1px; }
-    .tool-btn.warn   { border-color: rgba(234,179,8,0.3); }
-    .tool-btn.danger { border-color: rgba(220,38,38,0.2); }
-    .tool-btn.warn   .tool-title { color: #92400e; }
-    .tool-btn.danger .tool-title { color: var(--red); }
+    .tool-list { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .tool-btn { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; background: transparent; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; text-align: left; }
+    .tool-btn:last-child { border-bottom: 0; }
+    .tool-btn:active { background: var(--sunken); }
+    .tool-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tool-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--sunken); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ink); }
+    .tool-title { font-size: 14.5px; font-weight: 700; }
+    .tool-desc  { font-size: 12.5px; color: var(--ink2); margin-top: 2px; }
+    .tool-btn.danger .tool-icon { color: var(--danger); background: var(--danger-bg); border-color: #f4cfc7; }
+    .tool-btn.danger .tool-title { color: var(--danger); }
+    .group-lbl { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink3); text-transform: uppercase; margin: 4px 0 -6px; }
 
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: none; align-items: flex-end; justify-content: center; padding-bottom: var(--sab); }
+    /* ── Modal y avisos ── */
+    .modal { position: fixed; inset: 0; background: rgba(15,15,13,0.55); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
     .modal.active { display: flex; }
-    .modal-box { background: var(--card); border-radius: 20px 20px 0 0; padding: 24px 20px; width: 100%; max-width: 480px; }
-    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--text); margin-bottom: 8px; }
-    .modal-msg { font-size: 14px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+    .modal-box { background: var(--surface); border-radius: 18px 18px 0 0; padding: 22px 20px calc(20px + var(--sab)); width: 100%; max-width: 480px; }
+    .modal-title { font-weight: 800; font-stretch: 80%; font-size: 22px; text-transform: uppercase; margin-bottom: 8px; }
+    .modal-msg { font-size: 14px; color: var(--ink2); line-height: 1.5; margin-bottom: 20px; }
     .modal-btns { display: flex; gap: 8px; }
     .modal-btns .btn { flex: 1; }
-    .btn-red  { background: var(--red); color: #fff; }
-    .btn-gray { background: #f5f5f5; color: var(--text); border: 1px solid var(--border); }
+    @media (min-width: 820px) { .modal { align-items: center; } .modal-box { border-radius: 16px; } }
 
-    .toast { position: fixed; bottom: calc(20px + var(--sab)); left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 99px; font-size: 13px; font-weight: 500; z-index: 999; display: none; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-    .toast.active { display: block; }
-    .toast.success { background: #111; color: #4ade80; }
-    .toast.error   { background: #111; color: #f87171; }
-    .toast.info    { background: #111; color: rgba(255,255,255,0.6); }
+    .toast { position: fixed; bottom: calc(var(--nav-h) + 16px + var(--sab)); left: 50%; transform: translateX(-50%); padding: 11px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; z-index: 999; display: none; max-width: calc(100% - 32px); background: var(--brand); color: var(--ivory); box-shadow: 0 8px 24px rgba(0,0,0,0.25); align-items: center; gap: 8px; }
+    .toast::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--ivory2); flex-shrink: 0; }
+    .toast.active { display: flex; }
+    .toast.success::before { background: #4ade80; }
+    .toast.error::before { background: #f87171; }
+    @media (min-width: 820px) { .toast { bottom: 24px; } }
 
-    .spinner { width: 20px; height: 20px; border: 2px solid #e5e5e5; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; margin: 40px auto; }
+    .spinner { width: 22px; height: 22px; border: 2px solid var(--line); border-top-color: var(--ink); border-radius: 50%; animation: spin 0.6s linear infinite; margin: 40px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    @media (min-width: 640px) {
-      .prices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } .btn:active, .tool-btn:active { transform: none; } }
   </style>
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/></symbol>
+  <symbol id="i-pct" viewBox="0 0 24 24"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3z"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 22 21H2z"/><path d="M12 10v5M12 18v.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+</svg>
+
 <header class="header">
   <div class="header-inner">
-    <a href="#" class="header-logo">
-      <img src="icon-192.png" alt="Negro Padel">
+    <a href="#" class="brand">
+      <img src="icon-192.png" alt="">
       <div>
-        <div class="logo-name">Negro Padel</div>
-        <div class="logo-sub">Panel Admin</div>
+        <div class="brand-name">Negro Pádel</div>
+        <div class="brand-sub">Panel de reservas</div>
       </div>
     </a>
-    <button class="btn btn-outline" onclick="recargarDatos()">↺ Recargar</button>
+    <div class="header-right">
+      <span class="today" id="todayLabel"></span>
+      <button class="icon-btn" onclick="recargarDatos()" aria-label="Recargar datos" title="Recargar datos"><svg class="ic"><use href="#i-refresh"/></svg></button>
+    </div>
   </div>
 </header>
 
-<div class="tabs">
-  <button class="tab active" onclick="showPanel('reservas',this)">🎾 Reservas</button>
-  <button class="tab" onclick="showPanel('precios',this)">💰 Precios</button>
-  <button class="tab" onclick="showPanel('descuento',this)">🔥 Descuento</button>
-  <button class="tab" onclick="showPanel('promociones',this)">🎁 Promociones</button>
-  <button class="tab" onclick="showPanel('tools',this)">🔧 Herramientas</button>
-</div>
+<nav class="tabs" aria-label="Secciones">
+  <button class="tab active" onclick="showPanel('reservas',this)"><svg class="ic"><use href="#i-cal"/></svg>Reservas</button>
+  <button class="tab" onclick="showPanel('precios',this)"><svg class="ic"><use href="#i-tag"/></svg>Precios</button>
+  <button class="tab" onclick="showPanel('descuento',this)"><svg class="ic"><use href="#i-pct"/></svg>Descuento</button>
+  <button class="tab" onclick="showPanel('promociones',this)"><svg class="ic"><use href="#i-spark"/></svg>Promos</button>
+  <button class="tab" onclick="showPanel('tools',this)"><svg class="ic"><use href="#i-tools"/></svg>Herramientas</button>
+</nav>
 
-<div class="main">
-  <div class="stats">
-    <div class="stat"><div class="stat-num" id="totalSlots">—</div><div class="stat-label">Total</div></div>
-    <div class="stat"><div class="stat-num r" id="occupiedSlots">—</div><div class="stat-label">Ocupados</div></div>
-    <div class="stat"><div class="stat-num o" id="fixedSlots">—</div><div class="stat-label">Fijos</div></div>
-    <div class="stat"><div class="stat-num g" id="availableSlots">—</div><div class="stat-label">Libres</div></div>
-  </div>
-
+<main class="main">
   <div class="panel active" id="panel-reservas">
+    <section class="summary" aria-label="Resumen de la semana">
+      <div class="summary-top">
+        <div class="summary-main"><span class="summary-num" id="availableSlots">—</span><span class="summary-lbl">turnos libres en los próximos 7 días</span></div>
+        <span class="summary-pct" id="occupancyPct"></span>
+      </div>
+      <div class="bar"><i id="occupancyBar" style="width:0"></i></div>
+      <div class="legend">
+        <span><span class="dot res"></span><b id="occupiedSlots">—</b>reservados</span>
+        <span><span class="dot fix"></span><b id="fixedSlots">—</b>turnos fijos</span>
+        <span><b id="totalSlots">—</b>turnos en total</span>
+      </div>
+    </section>
     <div class="day-tabs" id="dayTabs"></div>
     <div class="slots" id="schedule"><div class="spinner"></div></div>
   </div>
 
   <div class="panel" id="panel-precios">
-    <div class="section-title">Precios</div>
-    <div class="prices-grid">
-      <div class="card"><div class="card-title">Lunes a Viernes</div><div id="precios-semana"></div></div>
-      <div class="card"><div class="card-title">Sábado y Domingo</div><div id="precios-fds"></div></div>
+    <div class="section-head">
+      <h1 class="section-title">Precios</h1>
+      <p class="section-desc">Precio por turno de 90 minutos. Es el que ven los jugadores en la web.</p>
     </div>
-    <button class="btn btn-primary" onclick="guardarConfigPrecios()">💾 Guardar precios</button>
+    <div class="prices-grid">
+      <div class="card"><div class="card-title">Lunes a viernes</div><div id="precios-semana"></div></div>
+      <div class="card"><div class="card-title">Sábado y domingo</div><div id="precios-fds"></div></div>
+    </div>
+    <button class="btn btn-primary" onclick="guardarConfigPrecios()"><svg class="ic"><use href="#i-check"/></svg>Guardar precios</button>
   </div>
 
   <div class="panel" id="panel-descuento">
-    <div class="section-title">Descuento Last Minute</div>
+    <div class="section-head">
+      <h1 class="section-title">Descuento de último momento</h1>
+      <p class="section-desc">Baja el precio de los turnos libres que están por empezar.</p>
+    </div>
     <div class="card">
       <div class="toggle-row">
-        <span class="field-lbl">Activar descuento</span>
+        <label class="field-lbl" for="descuento-activo">Descuento activo</label>
         <label class="toggle"><input type="checkbox" id="descuento-activo"><span class="toggle-slider"></span></label>
       </div>
-      <div class="field-row"><span class="field-lbl">Porcentaje</span><input type="number" class="field-inp" id="descuento-porcentaje" value="10" min="1" max="100"></div>
-      <div class="field-row"><span class="field-lbl">Minutos antes</span><input type="number" class="field-inp" id="descuento-minutos" value="90" min="1"></div>
+      <div class="field-row">
+        <label class="field-lbl" for="descuento-porcentaje">Porcentaje<span class="field-hint">Cuánto se descuenta del precio</span></label>
+        <div class="affix"><input type="number" id="descuento-porcentaje" value="10" min="1" max="100" inputmode="numeric"><span>%</span></div>
+      </div>
+      <div class="field-row">
+        <label class="field-lbl" for="descuento-minutos">Anticipación<span class="field-hint">Se aplica a turnos que empiezan dentro de este plazo</span></label>
+        <div class="affix"><input type="number" id="descuento-minutos" value="90" min="1" inputmode="numeric"><span>min</span></div>
+      </div>
     </div>
-    <button class="btn btn-primary" onclick="guardarConfigPrecios()">💾 Guardar descuento</button>
+    <button class="btn btn-primary" onclick="guardarConfigPrecios()"><svg class="ic"><use href="#i-check"/></svg>Guardar descuento</button>
   </div>
 
   <div class="panel" id="panel-promociones">
-    <div class="section-title">Promociones</div>
+    <div class="section-head">
+      <h1 class="section-title">Promociones</h1>
+      <p class="section-desc">Texto corto que aparece en la web sobre un turno libre. Se repite todas las semanas.</p>
+    </div>
+    <div class="promo-days" id="promoDays"></div>
     <div class="card" id="promos-container"><div class="spinner"></div></div>
-    <button class="btn btn-primary" onclick="guardarPromociones()">💾 Guardar promociones</button>
+    <button class="btn btn-primary" onclick="guardarPromociones()"><svg class="ic"><use href="#i-check"/></svg>Guardar promociones</button>
   </div>
 
   <div class="panel" id="panel-tools">
-    <div class="section-title">Herramientas</div>
-    <button class="tool-btn" onclick="generarFlyerManual()">
-      <div class="tool-icon">🖼️</div><div><div class="tool-title">Generar flyer de turnos</div><div class="tool-desc">Descarga el PNG con los turnos libres de hoy</div></div>
-    </button>
-    <button class="tool-btn" onclick="recargarDatos()">
-      <div class="tool-icon">↺</div><div><div class="tool-title">Recargar datos</div><div class="tool-desc">Actualiza todo desde Google Sheets</div></div>
-    </button>
-    <button class="tool-btn warn" onclick="confirmClearNonFixed()">
-      <div class="tool-icon">🗑️</div><div><div class="tool-title">Limpiar reservas normales</div><div class="tool-desc">Mantiene los turnos fijos intactos</div></div>
-    </button>
-    <button class="tool-btn danger" onclick="confirmClearAll()">
-      <div class="tool-icon">⚠️</div><div><div class="tool-title">Limpiar TODO</div><div class="tool-desc">Elimina todas las reservas incluyendo fijos</div></div>
-    </button>
+    <div class="section-head"><h1 class="section-title">Herramientas</h1></div>
+    <div class="tool-list">
+      <button class="tool-btn" onclick="generarFlyerManual()">
+        <span class="tool-icon"><svg class="ic"><use href="#i-image"/></svg></span><span><span class="tool-title">Generar flyer de turnos</span><span class="tool-desc" style="display:block">Descarga el PNG con los turnos libres de hoy</span></span>
+      </button>
+      <button class="tool-btn" onclick="recargarDatos()">
+        <span class="tool-icon"><svg class="ic"><use href="#i-refresh"/></svg></span><span><span class="tool-title">Recargar datos</span><span class="tool-desc" style="display:block">Vuelve a traer reservas, precios y promociones</span></span>
+      </button>
+    </div>
+    <div class="group-lbl">Zona de riesgo</div>
+    <div class="tool-list">
+      <button class="tool-btn danger" onclick="confirmClearNonFixed()">
+        <span class="tool-icon"><svg class="ic"><use href="#i-trash"/></svg></span><span><span class="tool-title">Borrar reservas normales</span><span class="tool-desc" style="display:block">Los turnos fijos se mantienen</span></span>
+      </button>
+      <button class="tool-btn danger" onclick="confirmClearAll()">
+        <span class="tool-icon"><svg class="ic"><use href="#i-alert"/></svg></span><span><span class="tool-title">Borrar todo</span><span class="tool-desc" style="display:block">Elimina todas las reservas, incluidos los fijos</span></span>
+      </button>
+    </div>
   </div>
-</div>
+</main>
 
 <div class="toast" id="toast"></div>
 
-<div class="modal" id="confirmModal">
+<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-box">
-    <div class="modal-title">Confirmar</div>
+    <div class="modal-title" id="modalTitle">¿Seguro?</div>
     <div class="modal-msg" id="modalMessage"></div>
     <div class="modal-btns">
-      <button class="btn btn-red"  onclick="executeModalAction()">Confirmar</button>
+      <button class="btn btn-red"  onclick="executeModalAction()">Sí, borrar</button>
       <button class="btn btn-gray" onclick="closeModal()">Cancelar</button>
     </div>
   </div>
@@ -296,7 +400,7 @@
 
   function toast(msg, type) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.className = `toast ${type} active`;
+    t.textContent = msg.replace(/^✓\s*/, ''); t.className = `toast ${type} active`;
     clearTimeout(toastTimer);
     if (type !== 'info') toastTimer = setTimeout(() => t.classList.remove('active'), 4000);
   }
@@ -322,40 +426,54 @@
     } catch(e) { toast('Error: ' + e.message, 'error'); }
   }
 
+  const icon = id => `<svg class="ic"><use href="#i-${id}"/></svg>`;
+
   function renderDayTabs() {
-    document.getElementById('dayTabs').innerHTML = data.week.map((d,i) => `
-      <div class="day-tab ${i===dayIdx?'active':''}" onclick="selectDay(${i})">
-        <div class="day-tab-name">${d.day.slice(0,3)}</div>
-        <div class="day-tab-date">${d.date} ${MONTHS[parseInt(d.month)-1]}</div>
-      </div>`).join('');
+    document.getElementById('dayTabs').innerHTML = data.week.map((d,i) => {
+      const total = slotsForDay(d).length;
+      const occ = slotsForDay(d).filter(t => d.slots[t]).length;
+      return `
+      <button class="day-tab ${i===dayIdx?'active':''}" onclick="selectDay(${i})" aria-label="${d.day} ${d.date}: ${occ} de ${total} ocupados">
+        <span class="day-tab-name">${d.day.slice(0,3)}</span>
+        <span class="day-tab-date">${d.date}</span>
+        <span class="day-tab-mon">${MONTHS[parseInt(d.month)-1]}</span>
+        <span class="bar"><i style="width:${total ? Math.round(occ/total*100) : 0}%"></i></span>
+      </button>`;
+    }).join('');
   }
 
   function selectDay(i) { dayIdx = i; renderDayTabs(); renderSlots(); }
 
   function renderSlots() {
     const day = data.week[dayIdx]; if (!day) return;
+    const fecha = getFechaTurno(day);
     document.getElementById('schedule').innerHTML = slotsForDay(day).map(time => {
       const occ   = day.slots[time];
       const fixed = data.fixedSlotsByDay[day.day]?.[time];
-      if (occ) return `
-        <div class="slot ${fixed?'fixed':'occupied'}">
-          <div class="slot-time">${time}</div>
-          <div class="slot-body">
-            <div class="slot-name">${occ}</div>
-            <span class="slot-badge ${fixed?'badge-fixed':'badge-normal'}">${fixed?'📌 Fijo':'● Reservado'}</span>
-          </div>
+      const live  = turnoEnCurso(fecha, time);
+      const past  = !live && turnoFinalizado(fecha, time);
+      const timeCol = `<div class="slot-time">${time}<span class="slot-end">→ ${finTurno(time)}</span></div>`;
+      if (occ) {
+        const state = live ? `<span class="slot-state live"><span class="dot"></span>En curso</span>`
+          : fixed ? `<span class="slot-state"><span class="dot fix"></span>Fijo · todos los ${day.day.toLowerCase()}</span>`
+          : `<span class="slot-state"><span class="dot res"></span>Reservado</span>`;
+        return `
+        <div class="slot ${fixed?'fixed':'occupied'} ${past?'past':''}">
+          ${timeCol}
+          <div class="slot-body"><div class="slot-name">${occ}</div>${state}</div>
           <div class="slot-actions">
-            <button class="btn-ic ic-rm"    onclick="removePlayer('${day.dateKey}','${day.day}','${time}',${!!fixed})">✕</button>
-            <button class="btn-ic ${fixed?'ic-unpin':'ic-pin'}" onclick="toggleFixed('${day.day}','${time}','${occ}',${!!fixed})">${fixed?'📍':'📌'}</button>
+            <button class="btn-ic ic-pin ${fixed?'on':''}" onclick="toggleFixed('${day.day}','${time}','${occ}',${!!fixed})" aria-label="${fixed?'Quitar turno fijo':'Marcar como fijo'}" title="${fixed?'Quitar turno fijo':'Marcar como fijo'}">${icon('pin')}</button>
+            <button class="btn-ic ic-rm" onclick="removePlayer('${day.dateKey}','${day.day}','${time}',${!!fixed})" aria-label="Eliminar reserva" title="Eliminar reserva">${icon('x')}</button>
           </div>
         </div>`;
+      }
       return `
-        <div class="slot">
-          <div class="slot-time">${time}</div>
+        <div class="slot ${past?'past':''}">
+          ${timeCol}
           <div class="slot-wrap">
-            <input class="slot-input" id="inp-${time}" placeholder="Nombre del jugador"
+            <input class="slot-input" id="inp-${time}" placeholder="${past ? 'Finalizado' : live ? 'En curso · nombre del jugador' : 'Nombre del jugador'}" aria-label="Jugador para las ${time}"
               onkeypress="if(event.key==='Enter')addPlayer('${day.dateKey}','${day.day}','${time}')">
-            <button class="btn-add" onclick="addPlayer('${day.dateKey}','${day.day}','${time}')">+</button>
+            <button class="btn-add" onclick="addPlayer('${day.dateKey}','${day.day}','${time}')" aria-label="Reservar ${time}">${icon('plus')}</button>
           </div>
         </div>`;
     }).join('');
@@ -370,6 +488,9 @@
     document.getElementById('occupiedSlots').textContent  = occ;
     document.getElementById('fixedSlots').textContent     = fixed;
     document.getElementById('availableSlots').textContent = total - occ;
+    const pct = total ? Math.round(occ / total * 100) : 0;
+    document.getElementById('occupancyBar').style.width = pct + '%';
+    document.getElementById('occupancyPct').textContent = `${pct}% ocupado`;
   }
 
   async function addPlayer(dateKey, day, time) {
@@ -414,8 +535,8 @@
       const key = isF ? 'finDeSemana' : 'semana';
       document.getElementById(`precios-${id}`).innerHTML = SLOTS.map(h => `
         <div class="price-item">
-          <span class="price-lbl">${h}</span>
-          <input type="number" class="price-inp" id="precio-${key}-${h}" value="20000" step="1000">
+          <label class="price-lbl" for="precio-${key}-${h}">${h}</label>
+          <div class="affix"><span>$</span><input type="number" id="precio-${key}-${h}" value="20000" step="1000" inputmode="numeric"></div>
         </div>`).join('');
     });
   }
@@ -460,16 +581,31 @@
   }
 
   // ── PROMOCIONES ──
+  let promoDayIdx = 0;
   function buildPromoInputs() {
-    document.getElementById('promos-container').innerHTML = DIAS.map(dia => `
-      <div class="promo-day">
-        <div class="promo-day-title">${dia}</div>
+    document.getElementById('promos-container').innerHTML = DIAS.map((dia, i) => `
+      <div class="promo-day ${i===promoDayIdx?'active':''}" data-dia="${dia}">
+        <div class="card-title">${dia}</div>
         ${SLOTS.map(h => `
           <div class="promo-item">
-            <span class="promo-time">${h}</span>
-            <input class="promo-inp" id="promo-${dia}-${h}" placeholder="Texto...">
+            <label class="promo-time" for="promo-${dia}-${h}">${h}</label>
+            <input class="promo-inp" id="promo-${dia}-${h}" placeholder="Ej: 2x1 en bebidas" oninput="renderPromoDays()">
           </div>`).join('')}
       </div>`).join('');
+    renderPromoDays();
+  }
+
+  function renderPromoDays() {
+    document.getElementById('promoDays').innerHTML = DIAS.map((dia, i) => {
+      const n = SLOTS.filter(h => document.getElementById(`promo-${dia}-${h}`)?.value.trim()).length;
+      return `<button class="chip ${i===promoDayIdx?'active':''}" onclick="selectPromoDay(${i})">${dia.charAt(0) + dia.slice(1).toLowerCase()}${n ? `<em>${n}</em>` : ''}</button>`;
+    }).join('');
+  }
+
+  function selectPromoDay(i) {
+    promoDayIdx = i;
+    document.querySelectorAll('.promo-day').forEach((el, j) => el.classList.toggle('active', j === i));
+    renderPromoDays();
   }
 
   async function cargarPromociones() {
@@ -478,6 +614,7 @@
       const res = await r.json();
       if (!res.success) return;
       for (let k in res.data) { const el = document.getElementById(`promo-${k}`); if(el) el.value = res.data[k]; }
+      renderPromoDays();
     } catch(e) {}
   }
 
@@ -781,6 +918,10 @@
   function recargarDatos() { loadScheduleData(); cargarConfigPrecios(); cargarPromociones(); }
 
   // ── INIT ──
+  (() => {
+    const now = getArgentinaNow();
+    document.getElementById('todayLabel').textContent = `${DIAS[(now.getDay() + 6) % 7].slice(0,3)} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
+  })();
   buildPriceInputs();
   buildPromoInputs();
   loadScheduleData();
